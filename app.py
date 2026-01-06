@@ -124,8 +124,9 @@ def calcular_dataframe(df, idx):
     col_rating_name = df_calc.columns[idx['rat']]
     pr_n = np.where(df_calc[col_rating_name].astype(str).str.upper() == 'H', 1.0, pr_n_tempo)
     pr_v = np.select([(atr<=20), (atr>=60)], [0.0, 1.0], default=(atr-20)/40).clip(0, 1)
-    
-    df_calc['CALC_N'] = val_col * t_n * pr_n
+
+    taxa_final_nota = np.where(pr_n == 0, t_n, t_n * pr_n)
+    df_calc['CALC_N'] = val_col * taxa_final_nota
     df_calc['CALC_V'] = val_col * t_v * pr_v
     
     return df_calc
@@ -216,7 +217,7 @@ def gerar_excel_final(df_original, calc_data):
         write(i+1, c_idx["Qt. Dias Atraso"], f'={L["pos"]}{r}-{L["venc"]}{r}', f_num)
         write(i+1, c_idx["% PDD Nota"], f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,2,0)', f_pct)
         write(i+1, c_idx["% PDD Nota Pro rata"],f'=IF({L["rat"]}{r}="H", 1, IF({CL("Qt. Dias Aquisição x Venc.")}{r}=0,0,MIN(1,MAX(0,({L["pos"]}{r}-{L["aq"]}{r})/{CL("Qt. Dias Aquisição x Venc.")}{r}))))', f_pct)
-        write(i+1, c_idx["% PDD Nota Final"], f'={CL("% PDD Nota")}{r}*{CL("% PDD Nota Pro rata")}{r}', f_pct)
+        write(i+1, c_idx["% PDD Nota Final"], f'=IF({CL("% PDD Nota Pro rata")}{r}=0, {CL("% PDD Nota")}{r}, {CL("% PDD Nota")}{r}*{CL("% PDD Nota Pro rata")}{r})', f_pct)
         write(i+1, c_idx["% PDD Vencido"], f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,3,0)', f_pct)
         write(i+1, c_idx["% PDD Vencido Pro rata"], f'=IF({CL("Qt. Dias Atraso")}{r}<=20,0,IF({CL("Qt. Dias Atraso")}{r}>=60,1,({CL("Qt. Dias Atraso")}{r}-20)/40))', f_pct)
         write(i+1, c_idx["% PDD Vencido Final"], f'={CL("% PDD Vencido")}{r}*{CL("% PDD Vencido Pro rata")}{r}', f_pct)
