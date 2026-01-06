@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import io
-import time  # <--- Faltava esta biblioteca
 import xlsxwriter
 from xlsxwriter.utility import xl_col_to_name
 
@@ -35,7 +34,7 @@ st.markdown("""
     }
     div.stButton > button:hover { background-color: #001074; color: white; }
 
-    /* Estilo da Tabela */
+    /* Tabela */
     div[data-testid="stDataFrame"] {
         background-color: #f0f2f6;
         padding: 10px;
@@ -56,11 +55,10 @@ REGRAS = pd.DataFrame({
     '% Venc': [1.0, 0.995, 0.99, 0.97, 0.90, 0.70, 0.50, 0.30, 0.0]
 })
 
-# --- 3. PROCESSAMENTO (COM CACHE PARA PERFORMANCE) ---
+# --- 3. PROCESSAMENTO ---
 
 @st.cache_data(show_spinner=False)
 def ler_e_limpar(file):
-    """Lê o arquivo e sanitiza os dados."""
     try:
         if file.name.lower().endswith('.csv'):
             try: df = pd.read_csv(file)
@@ -69,36 +67,43 @@ def ler_e_limpar(file):
                 df = pd.read_csv(file, encoding='latin1', sep=';')
         else: df = pd.read_excel(file)
         
+        # Remove linhas totalmente vazias (segurança contra 'nan' no final)
+        df = df.dropna(how='all')
+        
         cols_txt = ['NotaPDD', 'Classificação', 'Rating']
         for c in df.columns:
             if df[c].dtype == 'object': df[c] = df[c].astype(str).str.strip()
-            # Numérico
+            
+            # Tratamento Numérico
             if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) and not any(p in c for p in cols_txt):
                 if df[c].dtype == 'object':
                     df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
                                              .str.replace('.', '', regex=False)\
                                              .str.replace(',', '.')
                 df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
-            # Datas
+            
+            # Tratamento Datas (Remove horas se houver)
             if any(x in c.lower() for x in ['data', 'vencimento', 'posicao']):
-                df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce')
+                df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce').dt.normalize()
+                
         return df, None
     except Exception as e: return None, str(e)
 
-@st.cache_data(show_spinner=False)
 def calcular_dataframe(df, idx):
-    """Realiza os cálculos matemáticos no Python para exibição no Dashboard."""
-    # Dicionários de taxas para mapeamento rápido
+    """Calcula colunas temporárias para o Dashboard (não afeta o Excel)."""
+    # Usa uma cópia para não sujar o original
+    df_calc = df.copy()
+    
     tx_n = dict(zip(REGRAS['Rating'], REGRAS['% Nota']))
     tx_v = dict(zip(REGRAS['Rating'], REGRAS['% Venc']))
     
-    rat_col = df.iloc[:, idx['rat']]
-    val_col = df.iloc[:, idx['val']]
+    rat_col = df_calc.iloc[:, idx['rat']]
+    val_col = df_calc.iloc[:, idx['val']]
     
     t_n = rat_col.map(tx_n).fillna(0)
     t_v = rat_col.map(tx_v).fillna(0)
     
-    da, dv, dp = df.iloc[:, idx['aq']], df.iloc[:, idx['venc']], df.iloc[:, idx['pos']]
+    da, dv, dp = df_calc.iloc[:, idx['aq']], df_calc.iloc[:, idx['venc']], df_calc.iloc[:, idx['pos']]
     tot = (dv - da).dt.days.replace(0, 1)
     pas = (dp - da).dt.days
     atr = (dp - dv).dt.days
@@ -106,15 +111,13 @@ def calcular_dataframe(df, idx):
     pr_n = np.clip(pas/tot, 0, 1)
     pr_v = np.select([(atr<=20), (atr>=60)], [0.0, 1.0], default=(atr-20)/40).clip(0, 1)
     
-    # Cria colunas de cálculo
-    df['CALC_N'] = val_col * t_n * pr_n
-    df['CALC_V'] = val_col * t_v * pr_v
+    df_calc['CALC_N'] = val_col * t_n * pr_n
+    df_calc['CALC_V'] = val_col * t_v * pr_v
     
-    return df
+    return df_calc
 
-@st.cache_data(show_spinner=False)
-def gerar_excel_final(df, calc_data):
-    """Gera o binário do Excel (XLSX)."""
+def gerar_excel_final(df_original, calc_data):
+    """Gera o Excel usando o DF Original Limpo (sem colunas de cálculo do Python)."""
     output = io.BytesIO()
     wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
@@ -126,6 +129,8 @@ def gerar_excel_final(df, calc_data):
     f_white_head = bk.add_format({**base_fmt, 'bg_color': 'white', 'border': 0})
     f_money = bk.add_format({**base_fmt, 'num_format': '#,##0.00'})
     f_pct = bk.add_format({**base_fmt, 'num_format': '0.00%', 'align': 'center'})
+    
+    # Data Abreviada (dd/mm/yyyy)
     f_date = bk.add_format({**base_fmt, 'num_format': 'dd/mm/yyyy', 'align': 'center'})
     f_text = bk.add_format({**base_fmt})
     f_num = bk.add_format({**base_fmt, 'align': 'center'})
@@ -134,29 +139,32 @@ def gerar_excel_final(df, calc_data):
     f_tot_money = bk.add_format({**base_fmt, 'bold': True, 'num_format': '#,##0.00', 'top': 1, 'bottom': 1})
     f_tot_sep = bk.add_format({**base_fmt, 'bg_color': 'white'})
 
-    # 1. PREPARAÇÃO DOS DADOS ANALÍTICOS (LIMPEZA GARANTIDA)
+    # 1. ABA ANALÍTICO (GARANTIDAMENTE LIMPA)
     sh_an = 'Analítico Detalhado'
     
-    # Remove colunas auxiliares do Python antes de exportar
+    # Garante que usamos o DF original, sem colunas extras
     cols_temp = ['CALC_N', 'CALC_V', 'Tx_N', 'Tx_V']
-    df_export = df.drop(columns=[c for c in cols_temp if c in df.columns], errors='ignore')
+    df_clean = df_original.drop(columns=[c for c in cols_temp if c in df_original.columns], errors='ignore')
     
-    # Garante que não há linhas de 'TOTAL' ou 'nan' no final
-    df_export = df_export.reset_index(drop=True)
+    # Remove qualquer linha residual vazia
+    df_clean = df_clean.dropna(how='all')
 
-    df_export.to_excel(wb, sheet_name=sh_an, index=False)
+    df_clean.to_excel(wb, sheet_name=sh_an, index=False)
     ws = wb.sheets[sh_an]
     ws.hide_gridlines(2)
     ws.freeze_panes(1, 0)
     
     idx = calc_data['idx']
-    for i, col in enumerate(df_export.columns):
+    for i, col in enumerate(df_clean.columns):
         ws.write(0, i, col, f_head)
-        if i in [idx['val'], idx['orn'], idx['orv']]: ws.set_column(i, i, 15, f_money)
-        elif i in [idx['aq'], idx['venc'], idx['pos']]: ws.set_column(i, i, 12, f_date)
-        else: ws.set_column(i, i, 15, f_text)
+        if i in [idx['val'], idx['orn'], idx['orv']]: 
+            ws.set_column(i, i, 15, f_money)
+        elif i in [idx['aq'], idx['venc'], idx['pos']]: 
+            ws.set_column(i, i, 12, f_date) # Aplica formato de data abreviada
+        else: 
+            ws.set_column(i, i, 15, f_text)
 
-    # 2. REGRAS
+    # 2. ABA REGRAS
     sh_re = 'Regras_Sistema'
     REGRAS.to_excel(wb, sheet_name=sh_re, index=False)
     ws_re = wb.sheets[sh_re]
@@ -169,7 +177,7 @@ def gerar_excel_final(df, calc_data):
     # 3. FÓRMULAS
     L = calc_data['L']
     c_idx = {}
-    curr = len(df_export.columns)
+    curr = len(df_clean.columns)
     
     headers = [
         ("", 2, f_white_head, None),
@@ -200,7 +208,7 @@ def gerar_excel_final(df, calc_data):
     write = ws.write_formula
     def CL(name): return xl_col_to_name(c_idx[name])
     
-    total_rows = len(df_export)
+    total_rows = len(df_clean)
     
     for i in range(total_rows):
         r = str(i + 2)
@@ -219,10 +227,9 @@ def gerar_excel_final(df, calc_data):
         orig_v = f'{L["orv"]}{r}' if L['orv'] else '0'
         write(i+1, c_idx["Dif Vencido"], f'=ABS({CL("PDD Vencido Calc")}{r}-{orig_v})', f_money)
 
-    # 4. ABA RESUMO
+    # 4. RESUMO
     ws_res = bk.add_worksheet('Resumo')
     ws_res.hide_gridlines(2)
-    
     cols_res = ["Classificação", "Valor Carteira", "", "PDD Nota (Orig.)", "PDD Nota (Calc.)", "Dif. Nota", "", "PDD Vencido (Orig.)", "PDD Vencido (Calc.)", "Dif. Vencido"]
     for i, c in enumerate(cols_res):
         if c == "": 
@@ -232,7 +239,7 @@ def gerar_excel_final(df, calc_data):
             ws_res.write(0, i, c, f_head)
             ws_res.set_column(i, i, 20 if i==0 else 18, f_money)
         
-    classes = sorted([str(x) for x in df.iloc[:, idx['rat']].unique() if str(x) != 'nan'])
+    classes = sorted([str(x) for x in df_clean.iloc[:, idx['rat']].unique() if str(x) != 'nan'])
     
     r_idx = 1
     for cls in classes:
@@ -308,34 +315,39 @@ if uploaded_file:
             # 2. Cálculo
             status_text.text("Calculando cenários...")
             progress_bar.progress(30)
+            
+            # Cálculos para o Dashboard (não afeta Excel)
             df_calc = calcular_dataframe(df_raw, idx)
             
-            # 3. Geração Excel
+            # 3. Geração Excel (Usa df_raw LIMPO)
             status_text.text("Gerando arquivo Excel...")
-            # Simula barra de progresso para a geração do Excel (Já que o cache deixa rápido)
+            # Simula barra de progresso
             for i in range(30, 90, 10):
                 time.sleep(0.05)
                 progress_bar.progress(i)
                 
             calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
-            xls = gerar_excel_final(df_calc, calc_data)
+            
+            # AQUI ESTÁ A CORREÇÃO PRINCIPAL: Passamos df_raw, não df_calc
+            xls = gerar_excel_final(df_raw, calc_data)
             
             progress_bar.progress(100, text="Processamento finalizado!")
             time.sleep(0.5)
             status_text.empty()
             progress_bar.empty()
             
-            # Botão Download
             with c2:
                 st.markdown('<div style="height: 2px"></div>', unsafe_allow_html=True)
                 st.download_button("📥 Baixar Excel", xls, "PDD_Calculado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
             st.divider()
             
-            # 4. DASHBOARD
+            # 4. DASHBOARD (Usa df_calc)
+            # Soma segura das colunas originais (df_calc tem os dados limpos)
             tot_val = df_calc.iloc[:, idx['val']].sum()
             tot_orn = df_calc.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
             tot_orv = df_calc.iloc[:, idx['orv']].sum() if idx['orv'] else 0.0
+            
             tot_cn = df_calc['CALC_N'].sum()
             tot_cv = df_calc['CALC_V'].sum()
             
@@ -354,10 +366,11 @@ if uploaded_file:
                 m2.metric("Calculado", f"R$ {tot_cv:,.2f}")
                 m3.metric("Diferença", f"R$ {tot_orv - tot_cv:,.2f}", delta=f"{tot_orv - tot_cv:,.2f}", delta_color="normal")
 
-            # 5. TABELA DETALHAMENTO
+            # 5. TABELA
             st.write("### 🏷️ Detalhamento por Rating")
             
             rat_name = df_calc.columns[idx['rat']]
+            # Agrupa usando o df_calc que tem as colunas CALC_N e CALC_V
             df_grp = df_calc.groupby(rat_name).agg({
                 df_calc.columns[idx['val']]: 'sum',
                 df_calc.columns[idx['orn']]: 'sum' if idx['orn'] else lambda x: 0,
@@ -370,6 +383,7 @@ if uploaded_file:
             df_grp['sort'] = df_grp.index.map(order).fillna(99)
             df_grp = df_grp.sort_values('sort').drop('sort', axis=1)
             
+            # Adiciona Total
             total_line = df_grp.sum()
             df_grp.loc['TOTAL'] = total_line
             
