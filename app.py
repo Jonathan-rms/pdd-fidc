@@ -22,7 +22,8 @@ st.markdown("""
     .stProgress > div > div > div > div { background-color: #0030B9; }
     
     /* Métricas */
-    div[data-testid="stMetricValue"] { font-size: 26px; color: #001074; }
+    div[data-testid="stMetricValue"] { font-size: 24px; color: #001074; }
+    div[data-testid="stMetricLabel"] { font-size: 14px; font-weight: bold; }
     
     /* Botões */
     div.stButton > button {
@@ -69,32 +70,25 @@ def ler_e_limpar(file):
         else: df = pd.read_excel(file)
         
         # --- LIMPEZA DE RODAPÉ/TOTAIS ---
-        
-        # 1. Remove linhas totalmente vazias
         df = df.dropna(how='all')
         
-        # 2. LIMPEZA ESPECÍFICA DE 'NotaPDD' (Pedido do Usuário)
-        # Identifica qual é a coluna de Rating neste arquivo
+        # Filtro de NotaPDD/Rating inválido
         possible_names = ['notapdd', 'classificação', 'classificacao', 'rating']
         col_rating = next((c for c in df.columns if any(x in c.lower() for x in possible_names)), None)
         
         if col_rating:
-            # Remove linhas onde o Rating é Nulo (NaN)
             df = df.dropna(subset=[col_rating])
-            # Remove linhas onde o Rating é a string literal "nan", "total", ou vazio
             df = df[~df[col_rating].astype(str).str.strip().str.lower().isin(['nan', 'null', '', 'total', 'soma'])]
 
-        # 3. Limpeza por Coluna de Valor (Segurança Adicional)
+        # Filtro de Valor
         col_val_name = next((c for c in df.columns if any(x in c.lower() for x in ['valorpresente', 'valoratual'])), None)
         if col_val_name:
              df = df.dropna(subset=[col_val_name])
 
-        # --- TRATAMENTO DE TIPOS ---
         cols_txt = ['NotaPDD', 'Classificação', 'Rating']
         for c in df.columns:
             if df[c].dtype == 'object': df[c] = df[c].astype(str).str.strip()
             
-            # Numérico
             if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) and not any(p in c for p in cols_txt):
                 if df[c].dtype == 'object':
                     df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
@@ -102,18 +96,14 @@ def ler_e_limpar(file):
                                              .str.replace(',', '.')
                 df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
             
-            # Datas
             if any(x in c.lower() for x in ['data', 'vencimento', 'posicao']):
                 df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce').dt.normalize()
         
-        # Resetar índice após exclusões
         df = df.reset_index(drop=True)
-                
         return df, None
     except Exception as e: return None, str(e)
 
 def calcular_dataframe(df, idx):
-    """Calcula colunas temporárias para o Dashboard (não afeta o Excel)."""
     df_calc = df.copy()
     
     tx_n = dict(zip(REGRAS['Rating'], REGRAS['% Nota']))
@@ -139,7 +129,6 @@ def calcular_dataframe(df, idx):
     return df_calc
 
 def gerar_excel_final(df_original, calc_data):
-    """Gera o Excel usando o DF Original Limpo."""
     output = io.BytesIO()
     wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
@@ -157,10 +146,8 @@ def gerar_excel_final(df_original, calc_data):
     f_tot_money = bk.add_format({**base_fmt, 'bold': True, 'num_format': '#,##0.00', 'top': 1, 'bottom': 1})
     f_tot_sep = bk.add_format({**base_fmt, 'bg_color': 'white'})
 
-    # 1. ABA ANALÍTICO (LIMPA)
+    # 1. ANALÍTICO
     sh_an = 'Analítico Detalhado'
-    
-    # Remove colunas auxiliares do Python
     cols_temp = ['CALC_N', 'CALC_V', 'Tx_N', 'Tx_V']
     df_clean = df_original.drop(columns=[c for c in cols_temp if c in df_original.columns], errors='ignore')
     
@@ -172,14 +159,11 @@ def gerar_excel_final(df_original, calc_data):
     idx = calc_data['idx']
     for i, col in enumerate(df_clean.columns):
         ws.write(0, i, col, f_head)
-        if i in [idx['val'], idx['orn'], idx['orv']]: 
-            ws.set_column(i, i, 15, f_money)
-        elif i in [idx['aq'], idx['venc'], idx['pos']]: 
-            ws.set_column(i, i, 12, f_date)
-        else: 
-            ws.set_column(i, i, 15, f_text)
+        if i in [idx['val'], idx['orn'], idx['orv']]: ws.set_column(i, i, 15, f_money)
+        elif i in [idx['aq'], idx['venc'], idx['pos']]: ws.set_column(i, i, 12, f_date)
+        else: ws.set_column(i, i, 15, f_text)
 
-    # 2. ABA REGRAS
+    # 2. REGRAS
     sh_re = 'Regras_Sistema'
     REGRAS.to_excel(wb, sheet_name=sh_re, index=False)
     ws_re = wb.sheets[sh_re]
@@ -224,7 +208,6 @@ def gerar_excel_final(df_original, calc_data):
     def CL(name): return xl_col_to_name(c_idx[name])
     
     total_rows = len(df_clean)
-    
     for i in range(total_rows):
         r = str(i + 2)
         write(i+1, c_idx["Qt. Dias Aquisição x Venc."], f'={L["venc"]}{r}-{L["aq"]}{r}', f_num)
@@ -255,12 +238,10 @@ def gerar_excel_final(df_original, calc_data):
             ws_res.set_column(i, i, 20 if i==0 else 18, f_money)
         
     classes = sorted([str(x) for x in df_clean.iloc[:, idx['rat']].unique() if str(x) != 'nan'])
-    
     r_idx = 1
     for cls in classes:
         row = str(r_idx + 1)
         ws_res.write(r_idx, 0, cls, f_text)
-        
         base = f"SUMIF('{sh_an}'!${L['rat']}:${L['rat']},A{row},'{sh_an}'!"
         ws_res.write_formula(r_idx, 1, f'={base}${L["val"]}:${L["val"]})', f_money)
         ws_res.write(r_idx, 2, "", f_tot_sep)
@@ -275,7 +256,6 @@ def gerar_excel_final(df_original, calc_data):
         ws_res.write_formula(r_idx, 9, f'=H{row}-I{row}', f_money)
         r_idx += 1
     
-    # TOTAL
     ws_res.write(r_idx, 0, "TOTAL", f_tot_txt)
     for c in range(1, 10):
         if c in [1, 3, 4, 5, 7, 8, 9]:
@@ -301,14 +281,12 @@ c1, c2 = st.columns([3, 1])
 with c1:
     uploaded_file = st.file_uploader("Carregar Base (.xlsx / .csv)", type=['xlsx', 'csv'], label_visibility="collapsed")
 
-# Memória de Sessão
 if 'processed_data' not in st.session_state:
     st.session_state.processed_data = None
 if 'current_file_name' not in st.session_state:
     st.session_state.current_file_name = None
 
 if uploaded_file:
-    # Processa apenas se o arquivo for novo
     if st.session_state.current_file_name != uploaded_file.name:
         status_text = st.empty()
         progress_bar = st.progress(0)
@@ -352,15 +330,9 @@ if uploaded_file:
                 status_text.empty()
                 progress_bar.empty()
                 
-                # Salva na Memória
-                st.session_state.processed_data = {
-                    'df_calc': df_calc,
-                    'xls_bytes': xls_bytes,
-                    'idx': idx
-                }
+                st.session_state.processed_data = {'df_calc': df_calc, 'xls_bytes': xls_bytes, 'idx': idx}
                 st.session_state.current_file_name = uploaded_file.name
 
-# Exibição (Vem da Memória)
 if st.session_state.processed_data:
     data = st.session_state.processed_data
     df = data['df_calc']
@@ -380,14 +352,14 @@ if st.session_state.processed_data:
     tot_val = df.iloc[:, idx['val']].sum()
     tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
     tot_orv = df.iloc[:, idx['orv']].sum() if idx['orv'] else 0.0
-    
     tot_cn = df['CALC_N'].sum()
     tot_cv = df['CALC_V'].sum()
     
     colA, colB = st.columns(2)
     with colA:
         st.info("📋 **PDD Nota** (Risco Sacado)")
-        m1, m2, m3 = st.columns(3)
+        m0, m1, m2, m3 = st.columns(4) # <-- AQUI: 4 Colunas para incluir VP
+        m0.metric("V. Presente", f"R$ {tot_val:,.2f}")
         m1.metric("Original", f"R$ {tot_orn:,.2f}")
         m2.metric("Calculado", f"R$ {tot_cn:,.2f}")
         m3.metric("Diferença", f"R$ {tot_orn - tot_cn:,.2f}", delta=f"{tot_orn - tot_cn:,.2f}", delta_color="normal")
@@ -399,7 +371,7 @@ if st.session_state.processed_data:
         m2.metric("Calculado", f"R$ {tot_cv:,.2f}")
         m3.metric("Diferença", f"R$ {tot_orv - tot_cv:,.2f}", delta=f"{tot_orv - tot_cv:,.2f}", delta_color="normal")
 
-    st.write("### 🏷️ Detalhamento por Rating")
+    st.info("**Detalhamento** (Por rating)")
     
     rat_name = df.columns[idx['rat']]
     df_grp = df.groupby(rat_name).agg({
