@@ -1,0 +1,27 @@
+name: Acordar Streamlit (Anti-Inatividade)
+
+on:
+  # Agendamento: Roda todo dia às 09:00 UTC (06:00 Brasil)
+  schedule:
+    - cron: '0 9 * * *'
+  # Permite que você clique num botão para testar manualmente se quiser
+  workflow_dispatch:
+
+jobs:
+  cron_job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Necessário para o robô fazer o commit anti-inatividade
+    steps:
+      - uses: actions/checkout@v3
+
+      # 1. O Ping que acorda o site
+      - name: Acordar o App
+        run: |
+          # Substitua o link abaixo pelo link do seu site
+          curl -I https://calculadora-pdd-fidc.streamlit.app/
+          echo "Ping enviado com sucesso!"
+
+      # 2. O truque para o GitHub não desligar esse agendamento em 60 dias
+      - name: Evitar desativação por inatividade
+        uses: gautamkrishnar/keepalive-workflow@v1
