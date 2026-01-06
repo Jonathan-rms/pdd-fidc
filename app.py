@@ -6,339 +6,340 @@ import time
 import xlsxwriter
 from xlsxwriter.utility import xl_col_to_name
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA ---
+# --- 1. CONFIG & CSS ---
 st.set_page_config(
-    page_title="Gestão FIDC | PDD Engine",
-    page_icon="🟦",
+    page_title="Hemera DTVM | PDD Engine",
+    page_icon="🔷",
     layout="wide"
 )
 
-# Pequeno ajuste apenas para títulos azuis (Marca)
 st.markdown("""
 <style>
+    /* Marca */
     h1, h2, h3 { color: #0030B9 !important; }
-    div.stButton > button { width: 100%; border-radius: 8px; }
+    
+    /* Métricas */
+    div[data-testid="stMetricValue"] {
+        font-size: 24px;
+        color: #001074;
+    }
+    
+    /* Botões */
+    div.stButton > button {
+        background-color: #0030B9;
+        color: white;
+        border-radius: 6px;
+        border: none;
+        height: 3rem;
+    }
+    div.stButton > button:hover {
+        background-color: #001074;
+        color: white;
+    }
+    
+    /* Tabela */
+    div[data-testid="stDataFrame"] {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. REGRAS DE NEGÓCIO ---
-REGRAS_DATA = {
-    'Classificação': ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
-    '% PDD Nota':    [0.0, 0.005, 0.01, 0.03, 0.10, 0.30, 0.50, 0.70, 1.0],
-    '% PDD Vencido': [1.0, 0.995, 0.99, 0.97, 0.90, 0.70, 0.50, 0.30, 0.0]
-}
-DF_REGRAS = pd.DataFrame(REGRAS_DATA)
+# --- 2. REGRAS ---
+REGRAS = pd.DataFrame({
+    'Rating': ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+    '% Nota': [0.0, 0.005, 0.01, 0.03, 0.10, 0.30, 0.50, 0.70, 1.0],
+    '% Venc': [1.0, 0.995, 0.99, 0.97, 0.90, 0.70, 0.50, 0.30, 0.0]
+})
 
-# --- 3. PROCESSAMENTO (BACKEND ROBUSTO) ---
+# --- 3. PROCESSAMENTO ---
 @st.cache_data(show_spinner=False)
-def processar_base(file):
-    # 1. Leitura
+def process_data(file):
     try:
+        # Leitura
         if file.name.lower().endswith('.csv'):
             try: df = pd.read_csv(file)
             except: 
                 file.seek(0)
                 df = pd.read_csv(file, encoding='latin1', sep=';')
         else: df = pd.read_excel(file)
-    except Exception as e: return None, f"Erro ao ler arquivo: {e}"
-
-    # 2. Sanitização
-    cols_protegidas = ['NotaPDD', 'Classificação', 'Rating']
-    for col in df.columns:
-        if df[col].dtype == 'object': 
-            df[col] = df[col].astype(str).str.strip()
         
-        # Converte números
-        is_num = any(x in col.lower() for x in ['valor', 'pdd', 'r$', 'taxa', 'saldo'])
-        is_protected = any(p.lower() in col.lower() for p in cols_protegidas)
-        
-        if is_num and not is_protected:
-            if df[col].dtype == 'object':
-                try: df[col] = df[col].str.replace('R$', '', regex=False).str.replace('.', '', regex=False).str.replace(',', '.')
-                except: pass
-            temp = pd.to_numeric(df[col], errors='coerce')
-            if temp.notna().sum() > 0.5 * len(df): df[col] = temp.fillna(0)
+        # Limpeza
+        cols_txt = ['NotaPDD', 'Classificação', 'Rating']
+        for c in df.columns:
+            if df[c].dtype == 'object': df[c] = df[c].astype(str).str.strip()
             
-        # Converte datas
-        if any(x in col.lower() for x in ['data', 'vencimento', 'posicao']):
-            df[col] = pd.to_datetime(df[col], dayfirst=True, errors='coerce')
+            # Números
+            if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) and not any(p in c for p in cols_txt):
+                if df[c].dtype == 'object':
+                    df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
+                                             .str.replace('.', '', regex=False)\
+                                             .str.replace(',', '.')
+                df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+            
+            # Datas
+            if any(x in c.lower() for x in ['data', 'vencimento', 'posicao']):
+                df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce')
+                
+        return df, None
+    except Exception as e: return None, str(e)
 
-    return df, None
-
-def gerar_excel_final(df):
+def generate_excel(df, calc_data):
     output = io.BytesIO()
     wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
     
-    # Estilos
-    f_header = bk.add_format({'bold': True, 'bg_color': '#0030B9', 'font_color': 'white', 'align': 'center'})
-    f_calc_head = bk.add_format({'bold': True, 'bg_color': '#E8E8E8', 'font_color': 'black', 'align': 'center'})
+    # Formatos
+    f_head = bk.add_format({'bold': True, 'bg_color': '#0030B9', 'font_color': 'white', 'align': 'center', 'valign': 'vcenter'})
+    f_calc = bk.add_format({'bold': True, 'bg_color': '#E8E8E8', 'font_color': 'black', 'align': 'center'})
     f_money = bk.add_format({'num_format': '#,##0.00'})
     f_pct = bk.add_format({'num_format': '0.00%'})
-    f_date = bk.add_format({'num_format': 'dd/mm/yyyy'})
+    f_date = bk.add_format({'num_format': 'dd/mm/yyyy', 'align': 'center'})
 
-    # Mapeamento
-    def get_idx(keys):
-        for col in df.columns:
-            if any(k in col.lower().replace('_', '') for k in keys): return df.columns.get_loc(col)
-        return None
-
-    idx = {
-        'aq': get_idx(['aquisicao', 'dataaquisicao']),
-        'venc': get_idx(['vencimento', 'datavencimento']),
-        'pos': get_idx(['posicao', 'dataposicao']),
-        'rat': get_idx(['notapdd', 'classificacao', 'rating']),
-        'val': get_idx(['valorpresente', 'valoratual']),
-        'orn': get_idx(['pddnota']),
-        'orv': get_idx(['pddvencido'])
-    }
-    
-    # Aba 1: Analítico
+    # 1. Analítico
     sh_an = 'Analítico Detalhado'
     df.to_excel(wb, sheet_name=sh_an, index=False)
     ws = wb.sheets[sh_an]
     ws.hide_gridlines(2)
-    ws.freeze_panes(1, 0)
-
-    # Formata Originais
+    
+    # Identifica colunas originais
+    idx = calc_data['idx']
     for i, col in enumerate(df.columns):
-        ws.write(0, i, col, f_header)
+        ws.write(0, i, col, f_head)
         if i in [idx['val'], idx['orn'], idx['orv']]: ws.set_column(i, i, 15, f_money)
         elif i in [idx['aq'], idx['venc'], idx['pos']]: ws.set_column(i, i, 12, f_date)
         else: ws.set_column(i, i, 15)
 
-    # Aba 2: Regras (Oculta)
-    sh_reg = 'Regras_Sistema'
-    DF_REGRAS.to_excel(wb, sheet_name=sh_reg, index=False)
+    # 2. Regras (Oculta)
+    sh_re = 'Regras_Sistema'
+    REGRAS.to_excel(wb, sheet_name=sh_re, index=False)
     ws.hide()
 
-    # Colunas Calculadas
-    layout = [
-        ("", 2, None, None),
-        ("Qt. Dias Aquisição x Venc.", 12, f_calc_head, None),
-        ("Qt. Dias Atraso", 12, f_calc_head, None),
-        ("", 2, None, None),
-        ("% PDD Nota", 11, f_calc_head, f_pct),
-        ("% PDD Nota Pro rata", 11, f_calc_head, f_pct),
-        ("%PDD No  (total x Pro Rata)", 11, f_calc_head, f_pct),
-        ("", 2, None, None),
-        ("% PDD Vencido", 11, f_calc_head, f_pct),
-        ("% PDD Vencido Pro rata", 11, f_calc_head, f_pct),
-        ("%PDD Vencid (total x prorata)", 11, f_calc_head, f_pct),
-        ("", 2, None, None),
-        ("PDD Nota Calculado", 15, f_calc_head, f_money),
-        ("Dif. PDD Nota Calculado (ABS)", 15, f_calc_head, f_money),
-        ("", 2, None, None),
-        ("PDD Vencido Calculado", 15, f_calc_head, f_money),
-        ("Dif. PDD Vencido Calculado", 15, f_calc_head, f_money),
-    ]
-
+    # 3. Fórmulas
+    L = calc_data['L']
+    c_idx = {}
     curr = len(df.columns)
-    c_idx, c_let = {}, {}
-    for t, w, f, body_f in layout:
-        ws.set_column(curr, curr, w, body_f)
-        if t: ws.write(0, curr, t, f)
-        c_idx[t] = curr
-        c_let[t] = xl_col_to_name(curr)
-        curr += 1
-
-    # Letras
-    L = {k: xl_col_to_name(v) if v is not None else None for k, v in idx.items()}
     
-    # Loop de Escrita (Fórmulas)
+    # Cabeçalhos Calculados
+    headers = [
+        ("", 2, None), ("Qt. Dias Aquisição x Venc.", 12, None), ("Qt. Dias Atraso", 12, None), ("", 2, None),
+        ("% PDD Nota", 10, f_pct), ("% PDD Nota Pro rata", 10, f_pct), ("% PDD Nota Final", 10, f_pct), ("", 2, None),
+        ("% PDD Vencido", 10, f_pct), ("% PDD Vencido Pro rata", 10, f_pct), ("% PDD Vencido Final", 10, f_pct), ("", 2, None),
+        ("PDD Nota Calc", 15, f_money), ("Dif Nota", 15, f_money), ("", 2, None),
+        ("PDD Vencido Calc", 15, f_money), ("Dif Vencido", 15, f_money)
+    ]
+    
+    for t, w, fmt in headers:
+        ws.set_column(curr, curr, w, fmt)
+        if t: ws.write(0, curr, t, f_calc)
+        c_idx[t] = curr
+        curr += 1
+        
+    # Escreve Fórmulas
     write = ws.write_formula
+    
+    # Helper de Letra
+    def CL(name): return xl_col_to_name(c_idx[name])
+    
     for i in range(len(df)):
         r = str(i + 2)
-        
         # Dias
         write(i+1, c_idx["Qt. Dias Aquisição x Venc."], f'={L["venc"]}{r}-{L["aq"]}{r}', None)
         write(i+1, c_idx["Qt. Dias Atraso"], f'={L["pos"]}{r}-{L["venc"]}{r}', None)
         
         # Nota
         write(i+1, c_idx["% PDD Nota"], f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,2,0)', f_pct)
-        write(i+1, c_idx["% PDD Nota Pro rata"], f'=IF({c_let["Qt. Dias Aquisição x Venc."]}{r}=0,0,MIN(1,MAX(0,({L["pos"]}{r}-{L["aq"]}{r})/{c_let["Qt. Dias Aquisição x Venc."]}{r})))', f_pct)
-        write(i+1, c_idx["%PDD No  (total x Pro Rata)"], f'={c_let["% PDD Nota"]}{r}*{c_let["% PDD Nota Pro rata"]}{r}', f_pct)
+        write(i+1, c_idx["% PDD Nota Pro rata"], f'=IF({CL("Qt. Dias Aquisição x Venc.")}{r}=0,0,MIN(1,MAX(0,({L["pos"]}{r}-{L["aq"]}{r})/{CL("Qt. Dias Aquisição x Venc.")}{r})))', f_pct)
+        write(i+1, c_idx["% PDD Nota Final"], f'={CL("% PDD Nota")}{r}*{CL("% PDD Nota Pro rata")}{r}', f_pct)
         
         # Vencido
         write(i+1, c_idx["% PDD Vencido"], f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,3,0)', f_pct)
-        write(i+1, c_idx["% PDD Vencido Pro rata"], f'=IF({c_let["Qt. Dias Atraso"]}{r}<=20,0,IF({c_let["Qt. Dias Atraso"]}{r}>=60,1,({c_let["Qt. Dias Atraso"]}{r}-20)/40))', f_pct)
-        write(i+1, c_idx["%PDD Vencid (total x prorata)"], f'={c_let["% PDD Vencido"]}{r}*{c_let["% PDD Vencido Pro rata"]}{r}', f_pct)
+        write(i+1, c_idx["% PDD Vencido Pro rata"], f'=IF({CL("Qt. Dias Atraso")}{r}<=20,0,IF({CL("Qt. Dias Atraso")}{r}>=60,1,({CL("Qt. Dias Atraso")}{r}-20)/40))', f_pct)
+        write(i+1, c_idx["% PDD Vencido Final"], f'={CL("% PDD Vencido")}{r}*{CL("% PDD Vencido Pro rata")}{r}', f_pct)
         
         # Valores
-        write(i+1, c_idx["PDD Nota Calculado"], f'={L["val"]}{r}*{c_let["%PDD No  (total x Pro Rata)"]}{r}', f_money)
-        if L['orn']: write(i+1, c_idx["Dif. PDD Nota Calculado (ABS)"], f'=ABS({c_let["PDD Nota Calculado"]}{r}-{L["orn"]}{r})', f_money)
-        else: write(i+1, c_idx["Dif. PDD Nota Calculado (ABS)"], f'=ABS({c_let["PDD Nota Calculado"]}{r}-0)', f_money)
+        write(i+1, c_idx["PDD Nota Calc"], f'={L["val"]}{r}*{CL("% PDD Nota Final")}{r}', f_money)
+        orig_n = f'{L["orn"]}{r}' if L['orn'] else '0'
+        write(i+1, c_idx["Dif Nota"], f'=ABS({CL("PDD Nota Calc")}{r}-{orig_n})', f_money)
         
-        write(i+1, c_idx["PDD Vencido Calculado"], f'={L["val"]}{r}*{c_let["%PDD Vencid (total x prorata)"]}{r}', f_money)
-        if L['orv']: write(i+1, c_idx["Dif. PDD Vencido Calculado"], f'=ABS({c_let["PDD Vencido Calculado"]}{r}-{L["orv"]}{r})', f_money)
-        else: write(i+1, c_idx["Dif. PDD Vencido Calculado"], f'=ABS({c_let["PDD Vencido Calculado"]}{r}-0)', f_money)
+        write(i+1, c_idx["PDD Vencido Calc"], f'={L["val"]}{r}*{CL("% PDD Vencido Final")}{r}', f_money)
+        orig_v = f'{L["orv"]}{r}' if L['orv'] else '0'
+        write(i+1, c_idx["Dif Vencido"], f'=ABS({CL("PDD Vencido Calc")}{r}-{orig_v})', f_money)
 
-    # Aba 3: Resumo
+    # 4. Resumo
     ws_res = bk.add_worksheet('Resumo')
     cols_res = ["Classificação", "Valor Carteira", "", "PDD Nota (Orig.)", "PDD Nota (Calc.)", "Dif. Nota", "", "PDD Vencido (Orig.)", "PDD Vencido (Calc.)", "Dif. Vencido"]
     for i, c in enumerate(cols_res):
-        ws_res.write(0, i, c, f_header)
+        ws_res.write(0, i, c, f_head)
         ws_res.set_column(i, i, 18, f_money)
+        if c == "": ws_res.set_column(i, i, 2)
+        
+    classes = sorted([str(x) for x in df.iloc[:, idx['rat']].unique() if str(x) != 'nan'])
     
-    classes = sorted([x for x in df.iloc[:, idx['rat']].astype(str).unique() if x != 'nan'])
-    
-    row = 1
+    r_idx = 1
     for cls in classes:
-        r_str = str(row+1)
-        ws_res.write(row, 0, cls)
-        sumif = f"SUMIF('{sh_an}'!${L['rat']}:${L['rat']},A{r_str},'{sh_an}'!"
+        row = str(r_idx + 1)
+        ws_res.write(r_idx, 0, cls)
+        # Somas via Excel
+        base = f"SUMIF('{sh_an}'!${L['rat']}:${L['rat']},A{row},'{sh_an}'!"
+        ws_res.write_formula(r_idx, 1, f'={base}${L["val"]}:${L["val"]})', f_money)
         
-        ws_res.write_formula(row, 1, f'={sumif}${L["val"]}:${L["val"]})', f_money)
+        ws_res.write_formula(r_idx, 3, f'={base}${L["orn"]}:${L["orn"]})' if L['orn'] else 0, f_money)
+        ws_res.write_formula(r_idx, 4, f'={base}${CL("PDD Nota Calc")}:${CL("PDD Nota Calc")})', f_money)
+        ws_res.write_formula(r_idx, 5, f'=D{row}-E{row}', f_money)
         
-        orig_n = f'={sumif}${L["orn"]}:${L["orn"]})' if L['orn'] else 0
-        ws_res.write_formula(row, 3, orig_n, f_money)
-        ws_res.write_formula(row, 4, f'={sumif}${c_let["PDD Nota Calculado"]}:${c_let["PDD Nota Calculado"]})', f_money)
-        ws_res.write_formula(row, 5, f'=D{r_str}-E{r_str}', f_money)
-        
-        orig_v = f'={sumif}${L["orv"]}:${L["orv"]})' if L['orv'] else 0
-        ws_res.write_formula(row, 7, orig_v, f_money)
-        ws_res.write_formula(row, 8, f'={sumif}${c_let["PDD Vencido Calculado"]}:${c_let["PDD Vencido Calculado"]})', f_money)
-        ws_res.write_formula(row, 9, f'=H{r_str}-I{r_str}', f_money)
-        row += 1
+        ws_res.write_formula(r_idx, 7, f'={base}${L["orv"]}:${L["orv"]})' if L['orv'] else 0, f_money)
+        ws_res.write_formula(r_idx, 8, f'={base}${CL("PDD Vencido Calc")}:${CL("PDD Vencido Calc")})', f_money)
+        ws_res.write_formula(r_idx, 9, f'=H{row}-I{row}', f_money)
+        r_idx += 1
         
     wb.close()
     output.seek(0)
-    return output, idx
+    return output
 
-# --- 4. INTERFACE DO USUÁRIO ---
+# --- 4. FRONTEND ---
 
-st.title("Gestão FIDC | Motor de Provisão")
-st.markdown("Importe a base de dados para gerar o comparativo de PDD e o arquivo auditável.")
+st.markdown("""
+<div style='text-align: center; margin-bottom: 20px;'>
+    <h1 style='margin:0'>HEMERA <span style='font-weight:300'>DTVM</span></h1>
+    <p style='color:grey; font-size:14px'>MOTOR DE CÁLCULO DE PROVISÃO (PDD)</p>
+</div>
+""", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("Selecione o arquivo (.xlsx ou .csv)", type=['xlsx', 'csv'])
+# Layout de Upload Compacto
+c1, c2 = st.columns([3, 1])
+with c1:
+    uploaded_file = st.file_uploader("Carregar Base (.xlsx / .csv)", type=['xlsx', 'csv'], label_visibility="collapsed")
 
+df_res = None
 if uploaded_file:
-    with st.spinner("Lendo e processando base..."):
-        df, error = processar_base(uploaded_file)
-        
-    if error:
-        st.error(error)
+    df, err = process_data(uploaded_file)
+    if err:
+        st.error(err)
     else:
-        # Calcular Resumo (Python Side) para Exibição
-        progress = st.progress(0, text="Calculando cenários...")
+        # Mapeamento
+        def get_col(keys):
+            return next((df.columns.get_loc(c) for c in df.columns if any(k in c.lower().replace('_','') for k in keys)), None)
         
-        # Mapeamento Rápido
-        cols = df.columns
-        def get_col(keys): return next((c for c in cols if any(k in c.lower().replace('_','') for k in keys)), None)
+        idx = {
+            'aq': get_col(['aquisicao']), 'venc': get_col(['vencimento']), 'pos': get_col(['posicao']),
+            'rat': get_col(['notapdd', 'classificacao']), 'val': get_col(['valorpresente', 'valoratual']),
+            'orn': get_col(['pddnota']), 'orv': get_col(['pddvencido'])
+        }
         
-        c_rat = get_col(['notapdd', 'classificacao'])
-        c_val = get_col(['valorpresente', 'valoratual'])
-        c_orn = get_col(['pddnota'])
-        c_orv = get_col(['pddvencido'])
-        c_aq  = get_col(['aquisicao'])
-        c_venc = get_col(['vencimento'])
-        c_pos = get_col(['posicao'])
-        
-        if not all([c_rat, c_val, c_aq, c_venc, c_pos]):
-            st.error("Colunas obrigatórias não encontradas no arquivo.")
+        if None in [idx['aq'], idx['venc'], idx['pos'], idx['rat'], idx['val']]:
+            st.error("Colunas obrigatórias não identificadas.")
         else:
-            # Cálculo Rápido Python (Vectorized)
-            tx_n = dict(zip(DF_REGRAS['Classificação'], DF_REGRAS['% PDD Nota']))
-            tx_v = dict(zip(DF_REGRAS['Classificação'], DF_REGRAS['% PDD Vencido']))
+            # Cálculo Python (Rápido para UI)
+            # Dicionários de Taxas
+            tx_n = dict(zip(REGRAS['Rating'], REGRAS['% Nota']))
+            tx_v = dict(zip(REGRAS['Rating'], REGRAS['% Venc']))
             
-            df['Tx_N'] = df[c_rat].map(tx_n).fillna(0)
-            df['Tx_V'] = df[c_rat].map(tx_v).fillna(0)
+            # Mapas
+            rat_col = df.iloc[:, idx['rat']]
+            val_col = df.iloc[:, idx['val']]
             
-            # Pro Rata
-            days_tot = (df[c_venc] - df[c_aq]).dt.days.replace(0, 1)
-            pr_n = np.clip((df[c_pos] - df[c_aq]).dt.days / days_tot, 0, 1).fillna(0)
+            t_n = rat_col.map(tx_n).fillna(0)
+            t_v = rat_col.map(tx_v).fillna(0)
             
-            delay = (df[c_pos] - df[c_venc]).dt.days
-            pr_v = np.select([(delay <= 20), (delay >= 60)], [0.0, 1.0], default=(delay-20)/40).clip(0, 1)
+            # Datas
+            da = df.iloc[:, idx['aq']]
+            dv = df.iloc[:, idx['venc']]
+            dp = df.iloc[:, idx['pos']]
+            
+            tot = (dv - da).dt.days.replace(0, 1)
+            pas = (dp - da).dt.days
+            atr = (dp - dv).dt.days
+            
+            pr_n = np.clip(pas/tot, 0, 1)
+            pr_v = np.select([(atr<=20), (atr>=60)], [0.0, 1.0], default=(atr-20)/40).clip(0, 1)
+            
+            # Result
+            df['CALC_N'] = val_col * t_n * pr_n
+            df['CALC_V'] = val_col * t_v * pr_v
+            
+            # Botão Download (Lado Direito)
+            calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
+            xls = generate_excel(df, calc_data)
+            
+            with c2:
+                st.markdown('<div style="height: 2px"></div>', unsafe_allow_html=True) # Spacer
+                st.download_button("📥 Baixar Excel", xls, "PDD_Calculado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+            # --- DASHBOARD ---
+            st.divider()
             
             # Totais
-            calc_n = (df[c_val] * df['Tx_N'] * pr_n).sum()
-            calc_v = (df[c_val] * df['Tx_V'] * pr_v).sum()
+            tot_val = val_col.sum()
             
-            orig_n = df[c_orn].sum() if c_orn else 0
-            orig_v = df[c_orv].sum() if c_orv else 0
+            # Correção da Soma Original (Usando nome da coluna se existir)
+            tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
+            tot_orv = df.iloc[:, idx['orv']].sum() if idx['orv'] else 0.0
             
-            diff_n = orig_n - calc_n
-            diff_v = orig_v - calc_v
+            tot_cn = df['CALC_N'].sum()
+            tot_cv = df['CALC_V'].sum()
             
-            progress.progress(50, text="Gerando arquivo Excel final...")
-            excel_file, _ = gerar_excel_final(df)
-            progress.empty()
-            
-            st.success("Cálculo finalizado com sucesso!")
-            
-            # --- DASHBOARD NATIVO CLEAN ---
-            st.divider()
-            
-            st.subheader("📊 Resumo Gerencial")
-            
-            # Colunas de Métricas (O Core do pedido)
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.info("📋 PDD Nota (Risco Sacado)")
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Original", f"R$ {orig_n:,.2f}")
-                c2.metric("Calculado", f"R$ {calc_n:,.2f}")
-                c3.metric("Diferença", f"R$ {diff_n:,.2f}", delta=f"{diff_n:,.2f}", delta_color="normal")
-            
-            with col2:
-                st.info("⏰ PDD Vencido (Atraso)")
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Original", f"R$ {orig_v:,.2f}")
-                c2.metric("Calculado", f"R$ {calc_v:,.2f}")
-                c3.metric("Diferença", f"R$ {diff_v:,.2f}", delta=f"{diff_v:,.2f}", delta_color="normal")
-            
-            st.divider()
-            
-            # Área de Download em Destaque
-            left, mid, right = st.columns([1, 2, 1])
-            with mid:
-                st.download_button(
-                    label="📥 BAIXAR EXCEL COM FÓRMULAS E RESUMO",
-                    data=excel_file,
-                    file_name="FIDC_Calculo_PDD_Final.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
-                    type="primary"
-                )
-            
-            # Detalhamento (Tabela Nativa com Formatação)
-            st.subheader("🏷️ Detalhamento por Classificação")
+            # Cards
+            colA, colB = st.columns(2)
+            with colA:
+                st.info("📋 **PDD Nota** (Risco Sacado)")
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Original", f"R$ {tot_orn:,.2f}")
+                m2.metric("Calculado", f"R$ {tot_cn:,.2f}")
+                delta = tot_orn - tot_cn
+                m3.metric("Diferença", f"R$ {delta:,.2f}", delta=f"{delta:,.2f}", delta_color="normal")
+                
+            with colB:
+                st.info("⏰ **PDD Vencido** (Atraso)")
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Original", f"R$ {tot_orv:,.2f}")
+                m2.metric("Calculado", f"R$ {tot_cv:,.2f}")
+                delta_v = tot_orv - tot_cv
+                m3.metric("Diferença", f"R$ {delta_v:,.2f}", delta=f"{delta_v:,.2f}", delta_color="normal")
+
+            # Detalhamento
+            st.write("### 🏷️ Detalhamento por Rating")
             
             # Agrupa
-            df_resumo = df.groupby(c_rat)[[c_val]].sum()
-            df_resumo['PDD Nota (Calc)'] = (df[c_val] * df['Tx_N'] * pr_n).groupby(df[c_rat]).sum()
-            df_resumo['PDD Vencido (Calc)'] = (df[c_val] * df['Tx_V'] * pr_v).groupby(df[c_rat]).sum()
+            rat_name = df.columns[idx['rat']]
+            df_grp = df.groupby(rat_name).agg({
+                df.columns[idx['val']]: 'sum',
+                'CALC_N': 'sum',
+                'CALC_V': 'sum'
+            }).reset_index()
             
-            # Configuração de Colunas do Streamlit
+            # Ordenação AA -> H
+            order = {k:v for v,k in enumerate(REGRAS['Rating'])}
+            df_grp['sort'] = df_grp[rat_name].map(order).fillna(99)
+            df_grp = df_grp.sort_values('sort').drop('sort', axis=1)
+            
+            # Exibe Tabela Formatada
             st.dataframe(
-                df_resumo.reset_index(),
+                df_grp,
                 use_container_width=True,
                 column_config={
-                    c_rat: st.column_config.TextColumn("Classificação"),
-                    c_val: st.column_config.NumberColumn("Valor Presente", format="R$ %.2f"),
-                    "PDD Nota (Calc)": st.column_config.NumberColumn("PDD Nota (Calc)", format="R$ %.2f"),
-                    "PDD Vencido (Calc)": st.column_config.NumberColumn("PDD Vencido (Calc)", format="R$ %.2f"),
+                    rat_name: st.column_config.TextColumn("Classificação", width="small"),
+                    df.columns[idx['val']]: st.column_config.NumberColumn("Valor Presente", format="R$ %.2f"),
+                    "CALC_N": st.column_config.NumberColumn("PDD Nota (Calc)", format="R$ %.2f"),
+                    "CALC_V": st.column_config.NumberColumn("PDD Vencido (Calc)", format="R$ %.2f"),
                 },
                 hide_index=True
             )
             
-            # Expander de Regras (Organizado)
-            with st.expander("📚 Ver Regras de Cálculo e Parâmetros"):
-                tab_r1, tab_r2 = st.tabs(["Tabela de Taxas", "Fórmulas"])
-                
-                with tab_r1:
-                    st.dataframe(DF_REGRAS, hide_index=True, use_container_width=True)
-                
-                with tab_r2:
-                    st.markdown("""
+            # Regras (Organizado)
+            with st.expander("📚 Ver Regras de Cálculo"):
+                rc1, rc2 = st.columns(2)
+                with rc1:
+                    st.write("**Tabela de Parâmetros**")
+                    st.dataframe(REGRAS, hide_index=True, use_container_width=True)
+                with rc2:
+                    st.write("**Lógica de Aplicação**")
+                    st.success("""
                     **1. PDD Nota (Pro Rata):**
-                    $$ PDD = Valor \\times Taxa_{Nota} \\times \\left( \\frac{Posição - Aquisição}{Vencimento - Aquisição} \\right) $$
+                    > (Data Posição - Data Aquisição) / (Vencimento - Aquisição)
                     
-                    **2. PDD Vencido (Regra Linear):**
-                    * **Atraso ≤ 20 dias:** 0%
-                    * **Atraso ≥ 60 dias:** 100%
-                    * **Entre 20 e 60 dias:**
-                    $$ Fator = \\frac{DiasAtraso - 20}{40} $$
+                    **2. PDD Vencido (Linear):**
+                    * **≤ 20 dias:** 0%
+                    * **21 a 59 dias:** (Dias Atraso - 20) / 40
+                    * **≥ 60 dias:** 100%
                     """)
