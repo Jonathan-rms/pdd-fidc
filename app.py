@@ -4,7 +4,7 @@ import numpy as np
 import io
 import time
 import xlsxwriter
-from xlsxwriter.utility import xl_col_to_name, xl_rowcol_to_cell
+from xlsxwriter.utility import xl_col_to_name
 
 # --- 1. CONFIGURAÇÃO VISUAL ---
 st.set_page_config(
@@ -35,15 +35,15 @@ st.markdown("""
     }
     div.stButton > button:hover { background-color: #001074; color: white; }
 
-    /* Estilo da Tabela (Cabeçalho Azul Claro igual st.info) */
+    /* Estilo da Tabela (Cabeçalho Azul Claro) */
     div[data-testid="stDataFrame"] {
-        background-color: #f0f2f6; /* Fundo leve */
+        background-color: #f0f2f6;
         padding: 10px;
         border-radius: 10px;
     }
     th {
-        font-size: 16px !important; /* Fonte maior */
-        background-color: #e8f0fe !important; /* Azul bem claro */
+        font-size: 16px !important;
+        background-color: #e8f0fe !important;
         color: #0030B9 !important;
     }
 </style>
@@ -70,57 +70,59 @@ def ler_e_limpar(file):
         cols_txt = ['NotaPDD', 'Classificação', 'Rating']
         for c in df.columns:
             if df[c].dtype == 'object': df[c] = df[c].astype(str).str.strip()
+            # Tratamento numérico seguro
             if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) and not any(p in c for p in cols_txt):
                 if df[c].dtype == 'object':
                     df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
                                              .str.replace('.', '', regex=False)\
                                              .str.replace(',', '.')
                 df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+            # Datas
             if any(x in c.lower() for x in ['data', 'vencimento', 'posicao']):
                 df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce')
         return df, None
     except Exception as e: return None, str(e)
 
-# --- 4. GERAÇÃO DE EXCEL (AJUSTADO) ---
 def gerar_excel_com_progresso(df, calc_data, progress_bar, status_text):
     output = io.BytesIO()
     wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
     
-    # FONTE GERAL: Montserrat 9
+    # Fontes
     base_fmt = {'font_name': 'Montserrat', 'font_size': 9}
-    
-    # Estilos
     f_head = bk.add_format({**base_fmt, 'bold': True, 'bg_color': '#0030B9', 'font_color': 'white', 'align': 'center', 'valign': 'vcenter'})
     f_calc = bk.add_format({**base_fmt, 'bold': True, 'bg_color': '#E8E8E8', 'font_color': 'black', 'align': 'center', 'text_wrap': True})
-    f_white_head = bk.add_format({**base_fmt, 'bg_color': 'white', 'border': 0}) # Para colunas vazias
-    
+    f_white_head = bk.add_format({**base_fmt, 'bg_color': 'white', 'border': 0})
     f_money = bk.add_format({**base_fmt, 'num_format': '#,##0.00'})
     f_pct = bk.add_format({**base_fmt, 'num_format': '0.00%', 'align': 'center'})
     f_date = bk.add_format({**base_fmt, 'num_format': 'dd/mm/yyyy', 'align': 'center'})
     f_text = bk.add_format({**base_fmt})
     f_num = bk.add_format({**base_fmt, 'align': 'center'})
     
-    # Estilo Total (Bordas)
     f_tot_txt = bk.add_format({**base_fmt, 'bold': True, 'top': 1, 'bottom': 1})
     f_tot_money = bk.add_format({**base_fmt, 'bold': True, 'num_format': '#,##0.00', 'top': 1, 'bottom': 1})
     f_tot_sep = bk.add_format({**base_fmt, 'bg_color': 'white'})
 
-    # 1. ABA ANALÍTICO (PRIMEIRA = VISÍVEL)
+    # 1. ABA ANALÍTICO (LIMPA)
     sh_an = 'Analítico Detalhado'
-    df.to_excel(wb, sheet_name=sh_an, index=False)
+    
+    # Remove colunas de cálculo do Python antes de exportar
+    cols_temp = ['CALC_N', 'CALC_V', 'Tx_N', 'Tx_V']
+    df_export = df.drop(columns=[c for c in cols_temp if c in df.columns])
+    
+    df_export.to_excel(wb, sheet_name=sh_an, index=False)
     ws = wb.sheets[sh_an]
-    ws.hide_gridlines(2) # Remove grade
-    ws.freeze_panes(1, 0) # Congela cabeçalho
+    ws.hide_gridlines(2)
+    ws.freeze_panes(1, 0)
     
     idx = calc_data['idx']
-    for i, col in enumerate(df.columns):
+    for i, col in enumerate(df_export.columns):
         ws.write(0, i, col, f_head)
         if i in [idx['val'], idx['orn'], idx['orv']]: ws.set_column(i, i, 15, f_money)
         elif i in [idx['aq'], idx['venc'], idx['pos']]: ws.set_column(i, i, 12, f_date)
         else: ws.set_column(i, i, 15, f_text)
 
-    # 2. ABA REGRAS (CRIADA DEPOIS, PODE SER OCULTA)
+    # 2. ABA REGRAS
     sh_re = 'Regras_Sistema'
     REGRAS.to_excel(wb, sheet_name=sh_re, index=False)
     ws_re = wb.sheets[sh_re]
@@ -128,15 +130,15 @@ def gerar_excel_com_progresso(df, calc_data, progress_bar, status_text):
     for i, col in enumerate(REGRAS.columns):
         ws_re.write(0, i, col, f_head)
         ws_re.set_column(i, i, 15, f_pct if '%' in col else f_text)
-    ws_re.hide() # Oculta
+    ws_re.hide()
 
     # 3. FÓRMULAS NO ANALÍTICO
     L = calc_data['L']
     c_idx = {}
-    curr = len(df.columns)
+    curr = len(df_export.columns)
     
     headers = [
-        ("", 2, f_white_head, None), # Espaço Branco
+        ("", 2, f_white_head, None),
         ("Qt. Dias Aquisição x Venc.", 12, f_calc, f_num),
         ("Qt. Dias Atraso", 12, f_calc, f_num),
         ("", 2, f_white_head, None),
@@ -157,7 +159,7 @@ def gerar_excel_com_progresso(df, calc_data, progress_bar, status_text):
     
     for t, w, head_fmt, body_fmt in headers:
         ws.set_column(curr, curr, w, body_fmt)
-        ws.write(0, curr, t, head_fmt) # Usa formato branco se for espaço
+        ws.write(0, curr, t, head_fmt)
         if t: c_idx[t] = curr
         curr += 1
         
@@ -171,21 +173,17 @@ def gerar_excel_com_progresso(df, calc_data, progress_bar, status_text):
             progress_bar.progress(percent, text=f"Gerando Excel: Linha {i} de {total_rows} ({percent}%)")
             
         r = str(i + 2)
-        # Dias
         write(i+1, c_idx["Qt. Dias Aquisição x Venc."], f'={L["venc"]}{r}-{L["aq"]}{r}', f_num)
         write(i+1, c_idx["Qt. Dias Atraso"], f'={L["pos"]}{r}-{L["venc"]}{r}', f_num)
         
-        # Nota
         write(i+1, c_idx["% PDD Nota"], f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,2,0)', f_pct)
         write(i+1, c_idx["% PDD Nota Pro rata"], f'=IF({CL("Qt. Dias Aquisição x Venc.")}{r}=0,0,MIN(1,MAX(0,({L["pos"]}{r}-{L["aq"]}{r})/{CL("Qt. Dias Aquisição x Venc.")}{r})))', f_pct)
         write(i+1, c_idx["% PDD Nota Final"], f'={CL("% PDD Nota")}{r}*{CL("% PDD Nota Pro rata")}{r}', f_pct)
         
-        # Vencido
         write(i+1, c_idx["% PDD Vencido"], f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,3,0)', f_pct)
         write(i+1, c_idx["% PDD Vencido Pro rata"], f'=IF({CL("Qt. Dias Atraso")}{r}<=20,0,IF({CL("Qt. Dias Atraso")}{r}>=60,1,({CL("Qt. Dias Atraso")}{r}-20)/40))', f_pct)
         write(i+1, c_idx["% PDD Vencido Final"], f'={CL("% PDD Vencido")}{r}*{CL("% PDD Vencido Pro rata")}{r}', f_pct)
         
-        # Valores
         write(i+1, c_idx["PDD Nota Calc"], f'={L["val"]}{r}*{CL("% PDD Nota Final")}{r}', f_money)
         orig_n = f'{L["orn"]}{r}' if L['orn'] else '0'
         write(i+1, c_idx["Dif Nota"], f'=ABS({CL("PDD Nota Calc")}{r}-{orig_n})', f_money)
@@ -212,19 +210,17 @@ def gerar_excel_com_progresso(df, calc_data, progress_bar, status_text):
     r_idx = 1
     for cls in classes:
         row = str(r_idx + 1)
-        ws_res.write(r_idx, 0, cls, f_text) # Fonte normal
+        ws_res.write(r_idx, 0, cls, f_text)
         
         base = f"SUMIF('{sh_an}'!${L['rat']}:${L['rat']},A{row},'{sh_an}'!"
         ws_res.write_formula(r_idx, 1, f'={base}${L["val"]}:${L["val"]})', f_money)
-        
-        ws_res.write(r_idx, 2, "", f_tot_sep) # Espaço
+        ws_res.write(r_idx, 2, "", f_tot_sep)
         
         orig_n = f'={base}${L["orn"]}:${L["orn"]})' if L['orn'] else 0
         ws_res.write_formula(r_idx, 3, orig_n, f_money)
         ws_res.write_formula(r_idx, 4, f'={base}${CL("PDD Nota Calc")}:${CL("PDD Nota Calc")})', f_money)
         ws_res.write_formula(r_idx, 5, f'=D{row}-E{row}', f_money)
-        
-        ws_res.write(r_idx, 6, "", f_tot_sep) # Espaço
+        ws_res.write(r_idx, 6, "", f_tot_sep)
         
         orig_v = f'={base}${L["orv"]}:${L["orv"]})' if L['orv'] else 0
         ws_res.write_formula(r_idx, 7, orig_v, f_money)
@@ -233,14 +229,10 @@ def gerar_excel_com_progresso(df, calc_data, progress_bar, status_text):
         r_idx += 1
     
     # LINHA TOTAL
-    row_tot = r_idx + 1
     ws_res.write(r_idx, 0, "TOTAL", f_tot_txt)
-    
-    cols_to_sum = [1, 3, 4, 5, 7, 8, 9] # Indices das colunas numéricas
     for c in range(1, 10):
-        if c in cols_to_sum:
+        if c in [1, 3, 4, 5, 7, 8, 9]:
             letra = xl_col_to_name(c)
-            # Soma da linha 2 até a anterior
             ws_res.write_formula(r_idx, c, f'=SUM({letra}2:{letra}{r_idx})', f_tot_money)
         elif c in [2, 6]:
             ws_res.write(r_idx, c, "", f_tot_sep)
@@ -268,7 +260,6 @@ if uploaded_file:
     status_text = st.empty()
     progress_bar = st.progress(0)
     
-    # 1. Leitura
     status_text.text("Lendo arquivo...")
     df, err = ler_e_limpar(uploaded_file)
     progress_bar.progress(10)
@@ -310,16 +301,14 @@ if uploaded_file:
             pr_n = np.clip(pas/tot, 0, 1)
             pr_v = np.select([(atr<=20), (atr>=60)], [0.0, 1.0], default=(atr-20)/40).clip(0, 1)
             
-            # Resultados
             df['CALC_N'] = val_col * t_n * pr_n
             df['CALC_V'] = val_col * t_v * pr_v
             
-            # 3. Geração Excel (Lento)
+            # 3. Geração Excel
             status_text.text("Gerando arquivo Excel...")
             calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
             xls = gerar_excel_com_progresso(df, calc_data, progress_bar, status_text)
             
-            # Botão Download
             with c2:
                 st.markdown('<div style="height: 2px"></div>', unsafe_allow_html=True)
                 st.download_button("📥 Baixar Excel", xls, "PDD_Calculado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -328,6 +317,7 @@ if uploaded_file:
             
             # 4. DASHBOARD
             tot_val = val_col.sum()
+            # Soma segura das originais
             tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
             tot_orv = df.iloc[:, idx['orv']].sum() if idx['orv'] else 0.0
             tot_cn = df['CALC_N'].sum()
@@ -348,41 +338,38 @@ if uploaded_file:
                 m2.metric("Calculado", f"R$ {tot_cv:,.2f}")
                 m3.metric("Diferença", f"R$ {tot_orv - tot_cv:,.2f}", delta=f"{tot_orv - tot_cv:,.2f}", delta_color="normal")
 
-            # 5. TABELA DE DETALHAMENTO
+            # 5. TABELA DE DETALHAMENTO (BR FORMAT)
             st.write("### 🏷️ Detalhamento por Rating")
             
             rat_name = df.columns[idx['rat']]
-            # Agrupa com TODAS as colunas solicitadas
             df_grp = df.groupby(rat_name).agg({
                 df.columns[idx['val']]: 'sum',
-                df.columns[idx['orn']]: 'sum' if idx['orn'] else lambda x: 0, # Orig Nota
+                df.columns[idx['orn']]: 'sum' if idx['orn'] else lambda x: 0,
                 'CALC_N': 'sum',
-                df.columns[idx['orv']]: 'sum' if idx['orv'] else lambda x: 0, # Orig Venc
+                df.columns[idx['orv']]: 'sum' if idx['orv'] else lambda x: 0,
                 'CALC_V': 'sum'
             })
             
-            # Ordenação
             order = {k:v for v,k in enumerate(REGRAS['Rating'])}
             df_grp['sort'] = df_grp.index.map(order).fillna(99)
             df_grp = df_grp.sort_values('sort').drop('sort', axis=1)
             
-            # Cria LINHA TOTAL
+            # Adiciona Total
             total_row = df_grp.sum()
             df_grp.loc['TOTAL'] = total_row
             
-            # Exibe Tabela
-            st.dataframe(
-                df_grp,
-                use_container_width=True,
-                column_config={
-                    rat_name: st.column_config.TextColumn("Classificação"),
-                    df.columns[idx['val']]: st.column_config.NumberColumn("Valor Presente", format="R$ %.2f"),
-                    df.columns[idx['orn']]: st.column_config.NumberColumn("PDD Nota (Orig)", format="R$ %.2f"),
-                    "CALC_N": st.column_config.NumberColumn("PDD Nota (Calc)", format="R$ %.2f"),
-                    df.columns[idx['orv']]: st.column_config.NumberColumn("PDD Vencido (Orig)", format="R$ %.2f"),
-                    "CALC_V": st.column_config.NumberColumn("PDD Vencido (Calc)", format="R$ %.2f"),
-                }
-            )
+            # Formatação Manual para exibição BR (R$ 1.000,00)
+            df_show = df_grp.copy()
+            def fmt_br(x): return f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            
+            cols_to_fmt = df_show.columns
+            for col in cols_to_fmt:
+                df_show[col] = df_show[col].apply(fmt_br)
+                
+            # Renomear Colunas
+            df_show.columns = ["Valor Presente", "PDD Nota (Orig)", "PDD Nota (Calc)", "PDD Venc (Orig)", "PDD Venc (Calc)"]
+            
+            st.dataframe(df_show, use_container_width=True)
             
             # 6. REGRAS
             with st.expander("📚 Ver Regras de Cálculo"):
