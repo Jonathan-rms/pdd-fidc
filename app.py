@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Paleta da Marca (Ajustada para Contraste)
+# Paleta da Marca
 COLOR_BG = "#F1F5FB"       
 COLOR_PRIMARY = "#0030B9"  
 COLOR_SECONDARY = "#001074"
@@ -33,12 +33,10 @@ st.markdown(f"""
         font-family: 'Montserrat', sans-serif;
     }}
     
-    /* Forçar texto escuro para evitar invisibilidade no modo escuro */
     html, body, p, div, span, li, td {{
         color: {COLOR_TEXT_MAIN} !important;
     }}
     
-    /* Headers */
     h1, h2, h3, h4 {{
         color: {COLOR_SECONDARY} !important;
         font-weight: 700;
@@ -109,7 +107,6 @@ st.markdown(f"""
         font-weight: 700;
         display: inline-block;
     }}
-    /* Cores explícitas para garantir visibilidade */
     .diff-good {{ background: #dcfce7; color: #15803d !important; }}
     .diff-bad  {{ background: #fee2e2; color: #b91c1c !important; }}
     .diff-neu  {{ background: #f1f5f9; color: #64748b !important; }}
@@ -183,7 +180,6 @@ def format_brl(val):
     return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def processar_arquivo(uploaded_file, progress_bar, status_text):
-    # LEITURA
     try:
         if uploaded_file.name.lower().endswith('.csv'):
             try: df = pd.read_csv(uploaded_file)
@@ -193,7 +189,7 @@ def processar_arquivo(uploaded_file, progress_bar, status_text):
         else: df = pd.read_excel(uploaded_file)
     except Exception as e: return None, None, f"Erro: {e}"
 
-    # HIGIENIZAÇÃO
+    # Sanitização
     status_text.text("Sanitizando base de dados...")
     cols_protegidas = ['NotaPDD', 'Classificação', 'Rating', 'Sacado', 'Cedente']
     for col in df.columns:
@@ -209,7 +205,6 @@ def processar_arquivo(uploaded_file, progress_bar, status_text):
         if any(x in col.lower() for x in ['data', 'vencimento', 'posicao']):
             df[col] = pd.to_datetime(df[col], dayfirst=True, errors='coerce')
 
-    # MAPEAMENTO
     def get_idx(df, keys):
         for col in df.columns:
             if any(k in col.lower().replace('_', '') for k in keys): return df.columns.get_loc(col)
@@ -226,12 +221,10 @@ def processar_arquivo(uploaded_file, progress_bar, status_text):
     }
     if None in [idx['aq'], idx['venc'], idx['pos'], idx['rat'], idx['val']]: return None, None, "Colunas obrigatórias não encontradas."
 
-    # EXCEL WRITER
     output = io.BytesIO()
     wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
     
-    # Formatos
     f_head = bk.add_format({'bold': True, 'bg_color': COLOR_PRIMARY, 'font_color': 'white'})
     f_calc = bk.add_format({'bold': True, 'bg_color': '#E8E8E8', 'font_color': 'black'})
     f_mon = bk.add_format({'num_format': '#,##0.00'})
@@ -251,18 +244,16 @@ def processar_arquivo(uploaded_file, progress_bar, status_text):
         elif i in [idx['aq'], idx['venc'], idx['pos']]: ws.set_column(i, i, 12, f_dat)
         else: ws.set_column(i, i, 15)
 
-    # 2. ABA REGRAS (OCULTA)
+    # 2. ABA REGRAS
     sh_re = 'Regras_Sistema'
     DF_REGRAS.to_excel(wb, sheet_name=sh_re, index=False)
     ws_re = wb.sheets[sh_re]
     ws_re.hide()
 
-    # Prepara Dashboard (Cálculo Python para exibição rápida)
     df_dash = df.copy()
     tx_n = dict(zip(DF_REGRAS['Classificação'], DF_REGRAS['% PDD Nota']))
     tx_v = dict(zip(DF_REGRAS['Classificação'], DF_REGRAS['% PDD Vencido']))
     
-    # Mapeamento e Cálculo
     df_dash['TX_N'] = df_dash.iloc[:, idx['rat']].map(tx_n).fillna(0)
     df_dash['TX_V'] = df_dash.iloc[:, idx['rat']].map(tx_v).fillna(0)
     
@@ -281,7 +272,6 @@ def processar_arquivo(uploaded_file, progress_bar, status_text):
     df_dash['PDD_N_CALC'] = val * df_dash['TX_N'] * pr_n
     df_dash['PDD_V_CALC'] = val * df_dash['TX_V'] * pr_v
 
-    # ESCREVENDO FÓRMULAS NO EXCEL
     layout = [
         ("", 2, f_calc, None),
         ("Qt. Dias Aquisição x Venc.", 12, f_calc, None),
@@ -318,7 +308,6 @@ def processar_arquivo(uploaded_file, progress_bar, status_text):
     L_OR_N = xl_col_to_name(idx['orn']) if idx['orn'] else None
     L_OR_V = xl_col_to_name(idx['orv']) if idx['orv'] else None
 
-    # Loop Fórmulas
     write = ws.write_formula
     for i in range(len(df)):
         if i % 500 == 0:
@@ -340,7 +329,7 @@ def processar_arquivo(uploaded_file, progress_bar, status_text):
         dif_v = f'=ABS({c_let["PDD Vencido Calculado"]}{r}-{L_OR_V}{r})' if L_OR_V else f'=ABS({c_let["PDD Vencido Calculado"]}{r}-0)'
         write(i+1, c_idx["Dif. PDD Vencido Calculado"], dif_v, f_mon)
 
-    # 3. ABA RESUMO (COM SOMASE)
+    # 3. ABA RESUMO (EXCEL)
     ws_res = bk.add_worksheet('Resumo')
     ws_res.hide_gridlines(2)
     cols_res = ["Classificação", "Valor Carteira", "", "PDD Nota (Orig.)", "PDD Nota (Calc.)", "Dif. Nota", "", "PDD Vencido (Orig.)", "PDD Vencido (Calc.)", "Dif. Vencido"]
@@ -377,7 +366,6 @@ def processar_arquivo(uploaded_file, progress_bar, status_text):
 
 # --- 3. FRONTEND ---
 
-# Header
 st.markdown(f"""
 <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: white; border-radius: 12px; border-bottom: 4px solid {COLOR_PRIMARY};">
     <h1 style="margin:0; font-size: 28px;">HEMERA <span style="font-weight:300;">DTVM</span></h1>
@@ -401,7 +389,6 @@ if uploaded_file:
     
     if df_res is not None:
         
-        # Totais
         orig_n = df_res.iloc[:, idx['orn']].sum() if idx['orn'] else 0
         calc_n = df_res['PDD_N_CALC'].sum()
         dif_n = orig_n - calc_n
@@ -419,7 +406,7 @@ if uploaded_file:
         tab_dash, tab_regras = st.tabs(["📊 Dashboard Gerencial", "📘 Regras de Provisão"])
         
         with tab_dash:
-            # KPIS
+            # KPIS - LABELS CORRIGIDOS AQUI
             st.markdown(f"""
             <div class="kpi-container">
                 <div class="kpi-card">
