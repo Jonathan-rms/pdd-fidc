@@ -8,7 +8,7 @@ from xlsxwriter.utility import xl_col_to_name
 
 # --- 1. CONFIGURAÇÃO VISUAL ---
 st.set_page_config(
-    page_title="Hemera DTVM | PDD Engine",
+    page_title="Validação PDD",
     page_icon="🔷",
     layout="wide"
 )
@@ -273,7 +273,7 @@ def gerar_excel_final(df_original, calc_data):
 st.markdown("""
 <div style='text-align: center; margin-bottom: 20px;'>
     <h1 style='margin:0'>HEMERA <span style='font-weight:300'>DTVM</span></h1>
-    <p style='color:grey; font-size:14px'>MOTOR DE CÁLCULO DE PROVISÃO (PDD)</p>
+    <p style='color:grey; font-size:14px'>CÁLCULO DE PROVISÃO (PDD)</p>
 </div>
 """, unsafe_allow_html=True)
 
