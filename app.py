@@ -272,7 +272,7 @@ def gerar_excel_final(df_original, calc_data):
 
 st.markdown("""
 <div style='text-align: center; margin-bottom: 20px;'>
-    <h1 style='margin:0'>PDD - FIDC <span style='font-weight:300'>DTVM</span></h1>
+    <h1 style='margin:0'>PDD - FIDC <span style='font-weight:300'>I</span></h1>
     <p style='color:grey; font-size:14px'>CÁLCULO DE PROVISÃO (PDD)</p>
 </div>
 """, unsafe_allow_html=True)
@@ -343,7 +343,7 @@ if st.session_state.processed_data:
         st.download_button(
             label="📥 Baixar Excel",
             data=data['xls_bytes'],
-            file_name="PDD_Calculado.xlsx",
+            file_name="PDD_FIDC.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
