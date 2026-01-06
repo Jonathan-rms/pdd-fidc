@@ -1,27 +1,40 @@
-name: Acordar Streamlit (Anti-Inatividade)
+name: Acordar Streamlit
 
 on:
-  # Agendamento: Roda todo dia às 09:00 UTC (06:00 Brasil)
   schedule:
-    - cron: '0 9 * * *'
-  # Permite que você clique num botão para testar manualmente se quiser
+    - cron: '0 9 * * *' # Roda todo dia às 09:00 UTC
   workflow_dispatch:
 
 jobs:
   cron_job:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Necessário para o robô fazer o commit anti-inatividade
+      contents: write # Permissão crítica para poder fazer commit
     steps:
       - uses: actions/checkout@v3
 
-      # 1. O Ping que acorda o site
+      # 1. Ping no site (mantém o Streamlit acordado)
       - name: Acordar o App
         run: |
-          # Substitua o link abaixo pelo link do seu site
+          # Substitua pelo seu link real
           curl -I https://calculadora-pdd-fidc.streamlit.app/
-          echo "Ping enviado com sucesso!"
+          echo "Ping realizado com sucesso!"
 
-      # 2. O truque para o GitHub não desligar esse agendamento em 60 dias
-      - name: Evitar desativação por inatividade
-        uses: gautamkrishnar/keepalive-workflow@v1
+      # 2. # Este script verifica se o último commit foi há mais de 50 dias.
+      - name: Evitar inatividade
+        run: |
+          last_commit=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          days_since=$(( ($now - $last_commit) / 86400 ))
+          
+          echo "Dias desde o último commit: $days_since"
+          
+          if [ $days_since -gt 50 ]; then
+            echo "Mais de 50 dias inativo. Gerando commit automático..."
+            git config --global user.email "action@github.com"
+            git config --global user.name "GitHub Action"
+            git commit --allow-empty -m "Manter workflow ativo [skip ci]"
+            git push
+          else
+            echo "Repositório ativo. Nenhum commit necessário."
+          fi
