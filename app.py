@@ -68,14 +68,33 @@ def ler_e_limpar(file):
                 df = pd.read_csv(file, encoding='latin1', sep=';')
         else: df = pd.read_excel(file)
         
-        # Remove linhas totalmente vazias (segurança contra 'nan' no final)
+        # --- LIMPEZA DE RODAPÉ/TOTAIS ---
+        
+        # 1. Remove linhas totalmente vazias
         df = df.dropna(how='all')
         
+        # 2. LIMPEZA ESPECÍFICA DE 'NotaPDD' (Pedido do Usuário)
+        # Identifica qual é a coluna de Rating neste arquivo
+        possible_names = ['notapdd', 'classificação', 'classificacao', 'rating']
+        col_rating = next((c for c in df.columns if any(x in c.lower() for x in possible_names)), None)
+        
+        if col_rating:
+            # Remove linhas onde o Rating é Nulo (NaN)
+            df = df.dropna(subset=[col_rating])
+            # Remove linhas onde o Rating é a string literal "nan", "total", ou vazio
+            df = df[~df[col_rating].astype(str).str.strip().str.lower().isin(['nan', 'null', '', 'total', 'soma'])]
+
+        # 3. Limpeza por Coluna de Valor (Segurança Adicional)
+        col_val_name = next((c for c in df.columns if any(x in c.lower() for x in ['valorpresente', 'valoratual'])), None)
+        if col_val_name:
+             df = df.dropna(subset=[col_val_name])
+
+        # --- TRATAMENTO DE TIPOS ---
         cols_txt = ['NotaPDD', 'Classificação', 'Rating']
         for c in df.columns:
             if df[c].dtype == 'object': df[c] = df[c].astype(str).str.strip()
             
-            # Tratamento Numérico
+            # Numérico
             if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) and not any(p in c for p in cols_txt):
                 if df[c].dtype == 'object':
                     df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
@@ -83,16 +102,18 @@ def ler_e_limpar(file):
                                              .str.replace(',', '.')
                 df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
             
-            # Tratamento Datas (Remove horas se houver)
+            # Datas
             if any(x in c.lower() for x in ['data', 'vencimento', 'posicao']):
                 df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce').dt.normalize()
+        
+        # Resetar índice após exclusões
+        df = df.reset_index(drop=True)
                 
         return df, None
     except Exception as e: return None, str(e)
 
 def calcular_dataframe(df, idx):
     """Calcula colunas temporárias para o Dashboard (não afeta o Excel)."""
-    # Usa uma cópia para não sujar o original
     df_calc = df.copy()
     
     tx_n = dict(zip(REGRAS['Rating'], REGRAS['% Nota']))
@@ -118,38 +139,31 @@ def calcular_dataframe(df, idx):
     return df_calc
 
 def gerar_excel_final(df_original, calc_data):
-    """Gera o Excel usando o DF Original Limpo (sem colunas de cálculo do Python)."""
+    """Gera o Excel usando o DF Original Limpo."""
     output = io.BytesIO()
     wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
     
-    # Formatos
     base_fmt = {'font_name': 'Montserrat', 'font_size': 9}
     f_head = bk.add_format({**base_fmt, 'bold': True, 'bg_color': '#0030B9', 'font_color': 'white', 'align': 'center', 'valign': 'vcenter'})
     f_calc = bk.add_format({**base_fmt, 'bold': True, 'bg_color': '#E8E8E8', 'font_color': 'black', 'align': 'center', 'text_wrap': True})
     f_white_head = bk.add_format({**base_fmt, 'bg_color': 'white', 'border': 0})
     f_money = bk.add_format({**base_fmt, 'num_format': '#,##0.00'})
     f_pct = bk.add_format({**base_fmt, 'num_format': '0.00%', 'align': 'center'})
-    
-    # Data Abreviada (dd/mm/yyyy)
     f_date = bk.add_format({**base_fmt, 'num_format': 'dd/mm/yyyy', 'align': 'center'})
     f_text = bk.add_format({**base_fmt})
     f_num = bk.add_format({**base_fmt, 'align': 'center'})
-    
     f_tot_txt = bk.add_format({**base_fmt, 'bold': True, 'top': 1, 'bottom': 1})
     f_tot_money = bk.add_format({**base_fmt, 'bold': True, 'num_format': '#,##0.00', 'top': 1, 'bottom': 1})
     f_tot_sep = bk.add_format({**base_fmt, 'bg_color': 'white'})
 
-    # 1. ABA ANALÍTICO (GARANTIDAMENTE LIMPA)
+    # 1. ABA ANALÍTICO (LIMPA)
     sh_an = 'Analítico Detalhado'
     
-    # Garante que usamos o DF original, sem colunas extras
+    # Remove colunas auxiliares do Python
     cols_temp = ['CALC_N', 'CALC_V', 'Tx_N', 'Tx_V']
     df_clean = df_original.drop(columns=[c for c in cols_temp if c in df_original.columns], errors='ignore')
     
-    # Remove qualquer linha residual vazia
-    df_clean = df_clean.dropna(how='all')
-
     df_clean.to_excel(wb, sheet_name=sh_an, index=False)
     ws = wb.sheets[sh_an]
     ws.hide_gridlines(2)
@@ -161,7 +175,7 @@ def gerar_excel_final(df_original, calc_data):
         if i in [idx['val'], idx['orn'], idx['orv']]: 
             ws.set_column(i, i, 15, f_money)
         elif i in [idx['aq'], idx['venc'], idx['pos']]: 
-            ws.set_column(i, i, 12, f_date) # Aplica formato de data abreviada
+            ws.set_column(i, i, 12, f_date)
         else: 
             ws.set_column(i, i, 15, f_text)
 
@@ -287,127 +301,141 @@ c1, c2 = st.columns([3, 1])
 with c1:
     uploaded_file = st.file_uploader("Carregar Base (.xlsx / .csv)", type=['xlsx', 'csv'], label_visibility="collapsed")
 
+# Memória de Sessão
+if 'processed_data' not in st.session_state:
+    st.session_state.processed_data = None
+if 'current_file_name' not in st.session_state:
+    st.session_state.current_file_name = None
+
 if uploaded_file:
-    status_text = st.empty()
-    progress_bar = st.progress(0)
-    
-    status_text.text("Lendo arquivo...")
-    df_raw, err = ler_e_limpar(uploaded_file)
-    progress_bar.progress(10)
-    
-    if err:
-        st.error(err)
-        progress_bar.empty()
-    else:
-        # Mapeamento
-        def get_col(keys):
-            return next((df_raw.columns.get_loc(c) for c in df_raw.columns if any(k in c.lower().replace('_','') for k in keys)), None)
+    # Processa apenas se o arquivo for novo
+    if st.session_state.current_file_name != uploaded_file.name:
+        status_text = st.empty()
+        progress_bar = st.progress(0)
         
-        idx = {
-            'aq': get_col(['aquisicao']), 'venc': get_col(['vencimento']), 'pos': get_col(['posicao']),
-            'rat': get_col(['notapdd', 'classificacao']), 'val': get_col(['valorpresente', 'valoratual']),
-            'orn': get_col(['pddnota']), 'orv': get_col(['pddvencido'])
-        }
+        status_text.text("Lendo e limpando arquivo...")
+        df_raw, err = ler_e_limpar(uploaded_file)
         
-        if None in [idx['aq'], idx['venc'], idx['pos'], idx['rat'], idx['val']]:
-            st.error("Colunas obrigatórias não identificadas.")
-            progress_bar.empty()
+        if err:
+            st.error(err)
+            st.session_state.processed_data = None
         else:
-            # 2. Cálculo
-            status_text.text("Calculando cenários...")
-            progress_bar.progress(30)
+            progress_bar.progress(20, text="Identificando colunas...")
             
-            # Cálculos para o Dashboard (não afeta Excel)
-            df_calc = calcular_dataframe(df_raw, idx)
+            def get_col(keys):
+                return next((df_raw.columns.get_loc(c) for c in df_raw.columns if any(k in c.lower().replace('_','') for k in keys)), None)
             
-            # 3. Geração Excel (Usa df_raw LIMPO)
-            status_text.text("Gerando arquivo Excel...")
-            # Simula barra de progresso
-            for i in range(30, 90, 10):
-                time.sleep(0.05)
-                progress_bar.progress(i)
+            idx = {
+                'aq': get_col(['aquisicao']), 'venc': get_col(['vencimento']), 'pos': get_col(['posicao']),
+                'rat': get_col(['notapdd', 'classificacao']), 'val': get_col(['valorpresente', 'valoratual']),
+                'orn': get_col(['pddnota']), 'orv': get_col(['pddvencido'])
+            }
+            
+            if None in [idx['aq'], idx['venc'], idx['pos'], idx['rat'], idx['val']]:
+                st.error("Colunas obrigatórias não identificadas.")
+                st.session_state.processed_data = None
+            else:
+                status_text.text("Calculando cenários...")
+                progress_bar.progress(40)
+                df_calc = calcular_dataframe(df_raw, idx)
                 
-            calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
-            
-            # AQUI ESTÁ A CORREÇÃO PRINCIPAL: Passamos df_raw, não df_calc
-            xls = gerar_excel_final(df_raw, calc_data)
-            
-            progress_bar.progress(100, text="Processamento finalizado!")
-            time.sleep(0.5)
-            status_text.empty()
-            progress_bar.empty()
-            
-            with c2:
-                st.markdown('<div style="height: 2px"></div>', unsafe_allow_html=True)
-                st.download_button("📥 Baixar Excel", xls, "PDD_Calculado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-            st.divider()
-            
-            # 4. DASHBOARD (Usa df_calc)
-            # Soma segura das colunas originais (df_calc tem os dados limpos)
-            tot_val = df_calc.iloc[:, idx['val']].sum()
-            tot_orn = df_calc.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
-            tot_orv = df_calc.iloc[:, idx['orv']].sum() if idx['orv'] else 0.0
-            
-            tot_cn = df_calc['CALC_N'].sum()
-            tot_cv = df_calc['CALC_V'].sum()
-            
-            colA, colB = st.columns(2)
-            with colA:
-                st.info("📋 **PDD Nota** (Risco Sacado)")
-                m1, m2, m3 = st.columns(3)
-                m1.metric("Original", f"R$ {tot_orn:,.2f}")
-                m2.metric("Calculado", f"R$ {tot_cn:,.2f}")
-                m3.metric("Diferença", f"R$ {tot_orn - tot_cn:,.2f}", delta=f"{tot_orn - tot_cn:,.2f}", delta_color="normal")
-                
-            with colB:
-                st.info("⏰ **PDD Vencido** (Atraso)")
-                m1, m2, m3 = st.columns(3)
-                m1.metric("Original", f"R$ {tot_orv:,.2f}")
-                m2.metric("Calculado", f"R$ {tot_cv:,.2f}")
-                m3.metric("Diferença", f"R$ {tot_orv - tot_cv:,.2f}", delta=f"{tot_orv - tot_cv:,.2f}", delta_color="normal")
-
-            # 5. TABELA
-            st.write("### 🏷️ Detalhamento por Rating")
-            
-            rat_name = df_calc.columns[idx['rat']]
-            # Agrupa usando o df_calc que tem as colunas CALC_N e CALC_V
-            df_grp = df_calc.groupby(rat_name).agg({
-                df_calc.columns[idx['val']]: 'sum',
-                df_calc.columns[idx['orn']]: 'sum' if idx['orn'] else lambda x: 0,
-                'CALC_N': 'sum',
-                df_calc.columns[idx['orv']]: 'sum' if idx['orv'] else lambda x: 0,
-                'CALC_V': 'sum'
-            })
-            
-            order = {k:v for v,k in enumerate(REGRAS['Rating'])}
-            df_grp['sort'] = df_grp.index.map(order).fillna(99)
-            df_grp = df_grp.sort_values('sort').drop('sort', axis=1)
-            
-            # Adiciona Total
-            total_line = df_grp.sum()
-            df_grp.loc['TOTAL'] = total_line
-            
-            def fmt(x): return f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            df_show = df_grp.applymap(fmt)
-            df_show.columns = ["Valor Presente", "PDD Nota (Orig)", "PDD Nota (Calc)", "PDD Venc (Orig)", "PDD Venc (Calc)"]
-            
-            st.dataframe(df_show, use_container_width=True)
-            
-            # 6. REGRAS
-            with st.expander("📚 Ver Regras de Cálculo"):
-                rc1, rc2 = st.columns(2)
-                with rc1:
-                    st.write("**Tabela de Parâmetros**")
-                    st.dataframe(REGRAS, hide_index=True, use_container_width=True)
-                with rc2:
-                    st.write("**Lógica de Aplicação**")
-                    st.success("""
-                    **1. PDD Nota (Pro Rata):**
-                    > (Data Posição - Data Aquisição) / (Vencimento - Aquisição)
+                status_text.text("Gerando arquivo Excel...")
+                for i in range(40, 90, 10):
+                    time.sleep(0.05)
+                    progress_bar.progress(i)
                     
-                    **2. PDD Vencido (Linear):**
-                    * **≤ 20 dias:** 0%
-                    * **21 a 59 dias:** (Dias Atraso - 20) / 40
-                    * **≥ 60 dias:** 100%
-                    """)
+                calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
+                xls_bytes = gerar_excel_final(df_raw, calc_data)
+                
+                progress_bar.progress(100, text="Concluído!")
+                time.sleep(0.5)
+                status_text.empty()
+                progress_bar.empty()
+                
+                # Salva na Memória
+                st.session_state.processed_data = {
+                    'df_calc': df_calc,
+                    'xls_bytes': xls_bytes,
+                    'idx': idx
+                }
+                st.session_state.current_file_name = uploaded_file.name
+
+# Exibição (Vem da Memória)
+if st.session_state.processed_data:
+    data = st.session_state.processed_data
+    df = data['df_calc']
+    idx = data['idx']
+    
+    with c2:
+        st.markdown('<div style="height: 2px"></div>', unsafe_allow_html=True)
+        st.download_button(
+            label="📥 Baixar Excel",
+            data=data['xls_bytes'],
+            file_name="PDD_Calculado.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    st.divider()
+    
+    tot_val = df.iloc[:, idx['val']].sum()
+    tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
+    tot_orv = df.iloc[:, idx['orv']].sum() if idx['orv'] else 0.0
+    
+    tot_cn = df['CALC_N'].sum()
+    tot_cv = df['CALC_V'].sum()
+    
+    colA, colB = st.columns(2)
+    with colA:
+        st.info("📋 **PDD Nota** (Risco Sacado)")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Original", f"R$ {tot_orn:,.2f}")
+        m2.metric("Calculado", f"R$ {tot_cn:,.2f}")
+        m3.metric("Diferença", f"R$ {tot_orn - tot_cn:,.2f}", delta=f"{tot_orn - tot_cn:,.2f}", delta_color="normal")
+        
+    with colB:
+        st.info("⏰ **PDD Vencido** (Atraso)")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Original", f"R$ {tot_orv:,.2f}")
+        m2.metric("Calculado", f"R$ {tot_cv:,.2f}")
+        m3.metric("Diferença", f"R$ {tot_orv - tot_cv:,.2f}", delta=f"{tot_orv - tot_cv:,.2f}", delta_color="normal")
+
+    st.write("### 🏷️ Detalhamento por Rating")
+    
+    rat_name = df.columns[idx['rat']]
+    df_grp = df.groupby(rat_name).agg({
+        df.columns[idx['val']]: 'sum',
+        df.columns[idx['orn']]: 'sum' if idx['orn'] else lambda x: 0,
+        'CALC_N': 'sum',
+        df.columns[idx['orv']]: 'sum' if idx['orv'] else lambda x: 0,
+        'CALC_V': 'sum'
+    })
+    
+    order = {k:v for v,k in enumerate(REGRAS['Rating'])}
+    df_grp['sort'] = df_grp.index.map(order).fillna(99)
+    df_grp = df_grp.sort_values('sort').drop('sort', axis=1)
+    
+    total_line = df_grp.sum()
+    df_grp.loc['TOTAL'] = total_line
+    
+    def fmt(x): return f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    df_show = df_grp.applymap(fmt)
+    df_show.columns = ["Valor Presente", "PDD Nota (Orig)", "PDD Nota (Calc)", "PDD Venc (Orig)", "PDD Venc (Calc)"]
+    
+    st.dataframe(df_show, use_container_width=True)
+    
+    with st.expander("📚 Ver Regras de Cálculo"):
+        rc1, rc2 = st.columns(2)
+        with rc1:
+            st.write("**Tabela de Parâmetros**")
+            st.dataframe(REGRAS, hide_index=True, use_container_width=True)
+        with rc2:
+            st.write("**Lógica de Aplicação**")
+            st.success("""
+            **1. PDD Nota (Pro Rata):**
+            > (Data Posição - Data Aquisição) / (Vencimento - Aquisição)
+            
+            **2. PDD Vencido (Linear):**
+            * **≤ 20 dias:** 0%
+            * **21 a 59 dias:** (Dias Atraso - 20) / 40
+            * **≥ 60 dias:** 100%
+            """)
