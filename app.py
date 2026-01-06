@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import io
+import time
 import xlsxwriter
 from xlsxwriter.utility import xl_col_to_name
 
