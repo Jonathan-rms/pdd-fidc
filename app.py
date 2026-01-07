@@ -78,7 +78,12 @@ REGRAS = pd.DataFrame({
 def fmt_brl(v):
     if pd.isna(v):
         return "R$ 0,00"
-    return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    try:
+        # Garante que v seja float antes de formatar
+        val = float(v)
+        return f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return "R$ 0,00"
 
 def render_table_html(df):
     html = "<table><thead><tr>"
@@ -98,6 +103,7 @@ def render_table_html(df):
 
 @st.cache_data(show_spinner=False)
 def ler_e_limpar(file):
+    # Detecta CSV ou Excel
     if file.name.lower().endswith('.csv'):
         try:
             df = pd.read_csv(file)
@@ -109,19 +115,26 @@ def ler_e_limpar(file):
 
     df = df.dropna(how='all')
 
+    # Limpeza básica de strings (espaços)
     for c in df.select_dtypes(include='object'):
         df[c] = df[c].astype(str).str.strip()
 
+    # Tentativa de limpeza automática de números baseada no nome da coluna
     for c in df.columns:
         if any(x in c.lower() for x in ['valor', 'pdd']):
-            df[c] = (
-                df[c].astype(str)
-                .str.replace('R$', '', regex=False)
-                .str.replace('.', '', regex=False)
-                .str.replace(',', '.', regex=False)
-            )
-            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+            try:
+                df[c] = (
+                    df[c].astype(str)
+                    .str.replace('R$', '', regex=False)
+                    .str.replace(' ', '', regex=False) # Remove espaços internos
+                    .str.replace('.', '', regex=False)
+                    .str.replace(',', '.', regex=False)
+                )
+                df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+            except:
+                pass
 
+    # Conversão de datas
     for c in df.columns:
         if any(x in c.lower() for x in ['data', 'venc', 'posicao']):
             df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce')
@@ -169,13 +182,39 @@ if uploaded_file:
     if err:
         st.error(err)
     else:
+        # Identificação das colunas
         cols = df_raw.columns.str.lower()
-        idx = {
-            'rat': next(i for i,c in enumerate(cols) if 'class' in c or 'nota' in c),
-            'val': next(i for i,c in enumerate(cols) if 'valor' in c),
-            'orn': next((i for i,c in enumerate(cols) if 'pddnota' in c), None),
-            'orv': next((i for i,c in enumerate(cols) if 'pddvenc' in c), None)
-        }
+        
+        try:
+            idx = {
+                'rat': next(i for i,c in enumerate(cols) if 'class' in c or 'nota' in c),
+                'val': next(i for i,c in enumerate(cols) if 'valor' in c),
+                'orn': next((i for i,c in enumerate(cols) if 'pddnota' in c), None),
+                'orv': next((i for i,c in enumerate(cols) if 'pddvenc' in c), None)
+            }
+        except StopIteration:
+            st.error("Não foi possível identificar as colunas obrigatórias (Rating ou Valor). Verifique o arquivo.")
+            st.stop()
+
+        # --- CORREÇÃO PRINCIPAL: FORÇAR TIPAGEM NUMÉRICA ---
+        # Isso garante que mesmo se o nome da coluna não tiver 'valor' ou 'pdd',
+        # mas foi identificada no 'idx', ela será convertida para número.
+        cols_to_fix = [('val', 0.0), ('orn', 0.0), ('orv', 0.0)]
+        
+        for key, default_val in cols_to_fix:
+            col_idx = idx.get(key)
+            if col_idx is not None:
+                col_name = df_raw.columns[col_idx]
+                # Converte para string primeiro para limpar caracteres comuns de moeda que sobraram
+                # Depois converte para numérico coercivo (erros viram NaN)
+                # Por fim, preenche NaN com 0
+                series_clean = (
+                    df_raw[col_name].astype(str)
+                    .str.replace('R$', '', regex=False)
+                    .str.replace('.', '', regex=False)
+                    .str.replace(',', '.', regex=False)
+                )
+                df_raw[col_name] = pd.to_numeric(series_clean, errors='coerce').fillna(default_val)
 
         status.text("Calculando...")
         df = calcular_dataframe(df_raw, idx)
@@ -184,9 +223,10 @@ if uploaded_file:
         status.empty()
 
         # --- 6. MÉTRICAS ---
+        # Uso do 'is not None' para evitar erro se o índice for 0
         tot_val = df.iloc[:, idx['val']].sum()
-        tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0
-        tot_orv = df.iloc[:, idx['orv']].sum() if idx['orv'] else 0
+        tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] is not None else 0
+        tot_orv = df.iloc[:, idx['orv']].sum() if idx['orv'] is not None else 0
         tot_cn = df['CALC_N'].sum()
         tot_cv = df['CALC_V'].sum()
 
@@ -210,13 +250,22 @@ if uploaded_file:
         st.info("**Detalhamento por Rating**")
 
         rat_name = df.columns[idx['rat']]
-        df_grp = df.groupby(rat_name).agg({
+        
+        # Definição segura das colunas para agregação
+        agg_dict = {
             df.columns[idx['val']]: 'sum',
-            df.columns[idx['orn']]: 'sum' if idx['orn'] else lambda x: 0,
             'CALC_N': 'sum',
-            df.columns[idx['orv']]: 'sum' if idx['orv'] else lambda x: 0,
             'CALC_V': 'sum'
-        })
+        }
+        
+        # Adiciona colunas opcionais ao dicionário de agregação apenas se existirem
+        if idx['orn'] is not None:
+            agg_dict[df.columns[idx['orn']]] = 'sum'
+        
+        if idx['orv'] is not None:
+            agg_dict[df.columns[idx['orv']]] = 'sum'
+
+        df_grp = df.groupby(rat_name).agg(agg_dict)
 
         order = {k: v for v, k in enumerate(REGRAS['Rating'])}
         df_grp['__ord'] = df_grp.index.map(order).fillna(99)
@@ -224,17 +273,32 @@ if uploaded_file:
 
         df_grp.loc['TOTAL'] = df_grp.sum()
 
-        df_fmt = df_grp.copy()
+        # Reorganiza as colunas para a ordem de exibição desejada
+        # Cria lista base de colunas
+        cols_display = [df.columns[idx['val']]]
+        names_display = ["Valor Presente"]
+        
+        if idx['orn'] is not None:
+            cols_display.append(df.columns[idx['orn']])
+            names_display.append("PDD Nota (Orig.)")
+            
+        cols_display.append('CALC_N')
+        names_display.append("PDD Nota (Calc.)")
+        
+        if idx['orv'] is not None:
+            cols_display.append(df.columns[idx['orv']])
+            names_display.append("PDD Vencido (Orig.)")
+            
+        cols_display.append('CALC_V')
+        names_display.append("PDD Vencido (Calc.)")
+
+        # Filtra o dataframe para exibir na ordem correta
+        df_fmt = df_grp[cols_display].copy()
+        
         for c in df_fmt.columns:
             df_fmt[c] = df_fmt[c].apply(fmt_brl)
 
-        df_fmt.columns = [
-            "Valor Presente",
-            "PDD Nota (Orig.)",
-            "PDD Nota (Calc.)",
-            "PDD Vencido (Orig.)",
-            "PDD Vencido (Calc.)"
-        ]
+        df_fmt.columns = names_display
 
         render_table_html(df_fmt)
 
@@ -252,8 +316,7 @@ if uploaded_file:
                 st.markdown("""
                 ### 🧠 Lógica de Aplicação
 
-                **PDD Nota (Risco Sacado)**  
-                Pro rata temporis entre aquisição e vencimento.
+                **PDD Nota (Risco Sacado)** Pro rata temporis entre aquisição e vencimento.
 
                 ```
                 (Data Posição − Aquisição)
@@ -261,8 +324,7 @@ if uploaded_file:
                 (Vencimento − Aquisição)
                 ```
 
-                **PDD Vencido (Atraso)**  
-                - ≤ 20 dias → 0%  
+                **PDD Vencido (Atraso)** - ≤ 20 dias → 0%  
                 - 21–59 dias → Linear  
                 - ≥ 60 dias → 100%
                 """)
