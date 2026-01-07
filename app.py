@@ -1,144 +1,134 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
+import io
 import time
+import xlsxwriter
+from xlsxwriter.utility import xl_col_to_name
 
-# ===============================
-# CONFIGURAÇÃO
-# ===============================
+# --- 1. CONFIGURAÇÃO VISUAL ---
 st.set_page_config(
     page_title="Validação PDD",
     page_icon="🔷",
     layout="wide"
 )
 
-# ===============================
-# CSS GLOBAL
-# ===============================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+* { font-family: 'Montserrat', sans-serif !important; }
+.stApp, body { background:#ffffff !important; color:#262730 !important; }
 
-* {
-    font-family: 'Montserrat', sans-serif !important;
-    color: #262730;
+h1, h2, h3 { color:#0030B9 !important; font-weight:600; }
+
+div[data-testid="stFileUploader"], div[data-testid="stFileUploader"] * {
+    background:#ffffff !important; color:#262730 !important;
+}
+div[data-testid="stFileUploader"] {
+    border:1px solid #e0e0e0; border-radius:8px; padding:16px;
+}
+div[data-testid="stFileUploader"] > div {
+    border:2px dashed #d0d0d0; border-radius:6px; padding:20px;
 }
 
-.stApp {
-    background: #ffffff !important;
+div[data-testid="stMetricValue"] {
+    font-size:24px !important;
+    color:#0030B9 !important;
+    font-weight:600 !important;
 }
 
-h1, h2, h3, h1 *, h2 *, h3 * {
-    color: #0030B9 !important;
+.stProgress > div > div > div > div {
+    background-color:#0030B9 !important;
 }
 
-/* Upload */
-.upload-box {
-    background: #ffffff !important;
-    border: 2px dashed #d0d0d0;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-/* Progress */
-.progress-box {
-    margin-top: -8px;
-}
-
-/* Tables */
+/* HTML tables */
 table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
 }
-
 th {
-    background: #e8f0fe;
-    color: #0030B9;
-    padding: 8px;
-    border-bottom: 2px solid #0030B9;
-    text-align: left;
+    background:#e8f0fe;
+    color:#0030B9;
+    padding:8px;
+    border-bottom:2px solid #0030B9;
+    text-align:left;
 }
-
 td {
-    padding: 6px 8px;
-    border-bottom: 1px solid #eee;
+    padding:6px 8px;
+    border-bottom:1px solid #eee;
 }
-
 tr.total-row td {
-    font-weight: 600;
-    border-top: 2px solid #0030B9;
-    border-bottom: 2px solid #0030B9;
-    background: #f8f9fa;
-}
-
-/* Metrics */
-.metric-box {
-    border-radius: 8px;
-    padding: 12px;
-    text-align: center;
-}
-
-.metric-pos {
-    background: #e8f5e9;
-    color: #2e7d32;
-}
-
-.metric-neg {
-    background: #fdecea;
-    color: #c62828;
-}
-
-.metric-title {
-    font-size: 13px;
-}
-
-.metric-value {
-    font-size: 20px;
-    font-weight: 600;
+    font-weight:600;
+    border-top:2px solid #0030B9;
+    border-bottom:2px solid #0030B9;
+    background:#f8f9fa;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ===============================
-# REGRAS
-# ===============================
+# --- 2. REGRAS ---
 REGRAS = pd.DataFrame({
     'Rating': ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
     '% Nota': [0.0, 0.005, 0.01, 0.03, 0.10, 0.30, 0.50, 0.70, 1.0],
     '% Venc': [1.0, 0.995, 0.99, 0.97, 0.90, 0.70, 0.50, 0.30, 0.0]
 })
 
-# ===============================
-# FUNÇÕES
-# ===============================
+# --- 3. FUNÇÕES AUXILIARES ---
+def fmt_brl(v):
+    if pd.isna(v):
+        return "R$ 0,00"
+    return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+def render_table_html(df):
+    html = "<table><thead><tr>"
+    for c in df.columns:
+        html += f"<th>{c}</th>"
+    html += "</tr></thead><tbody>"
+
+    for idx, row in df.iterrows():
+        cls = "total-row" if str(idx).upper() == "TOTAL" else ""
+        html += f"<tr class='{cls}'>"
+        for v in row:
+            html += f"<td>{v}</td>"
+        html += "</tr>"
+
+    html += "</tbody></table>"
+    st.markdown(html, unsafe_allow_html=True)
+
 @st.cache_data(show_spinner=False)
-def ler_base(file):
-    if file.name.endswith(".csv"):
-        df = pd.read_csv(file, sep=";", encoding="latin1")
+def ler_e_limpar(file):
+    if file.name.lower().endswith('.csv'):
+        try:
+            df = pd.read_csv(file)
+        except:
+            file.seek(0)
+            df = pd.read_csv(file, encoding='latin1', sep=';')
     else:
         df = pd.read_excel(file)
 
-    df = df.dropna(how="all")
+    df = df.dropna(how='all')
 
-    for c in df.select_dtypes(include="object"):
+    for c in df.select_dtypes(include='object'):
         df[c] = df[c].astype(str).str.strip()
 
     for c in df.columns:
-        if "valor" in c.lower():
+        if any(x in c.lower() for x in ['valor', 'pdd']):
             df[c] = (
                 df[c].astype(str)
-                .str.replace("R$", "", regex=False)
-                .str.replace(".", "", regex=False)
-                .str.replace(",", ".", regex=False)
-                .astype(float)
+                .str.replace('R$', '', regex=False)
+                .str.replace('.', '', regex=False)
+                .str.replace(',', '.', regex=False)
             )
+            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
 
-    return df
+    for c in df.columns:
+        if any(x in c.lower() for x in ['data', 'venc', 'posicao']):
+            df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce')
 
+    return df, None
 
-def calcular(df, idx):
+def calcular_dataframe(df, idx):
     tx_n = dict(zip(REGRAS['Rating'], REGRAS['% Nota']))
     tx_v = dict(zip(REGRAS['Rating'], REGRAS['% Venc']))
 
@@ -150,44 +140,7 @@ def calcular(df, idx):
 
     return df
 
-
-def fmt(v):
-    if pd.isna(v):
-        return "R$ 0,00"
-    return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-
-def render_table(df, total=True):
-    html = "<table><thead><tr>"
-    for c in df.columns:
-        html += f"<th>{c}</th>"
-    html += "</tr></thead><tbody>"
-
-    for i, r in df.iterrows():
-        cls = "total-row" if total and r.iloc[0] == "TOTAL" else ""
-        html += f"<tr class='{cls}'>"
-        for v in r:
-            html += f"<td>{v}</td>"
-        html += "</tr>"
-
-    html += "</tbody></table>"
-    st.markdown(html, unsafe_allow_html=True)
-
-
-def metric_delta(title, value, delta):
-    cls = "metric-pos" if delta >= 0 else "metric-neg"
-    arrow = "▲" if delta >= 0 else "▼"
-    st.markdown(f"""
-    <div class="metric-box {cls}">
-        <div class="metric-title">{title}</div>
-        <div class="metric-value">{value}</div>
-        <div>{arrow} {fmt(delta)}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ===============================
-# HEADER
-# ===============================
+# --- 4. HEADER ---
 st.markdown("""
 <div style="text-align:center;margin-bottom:20px;">
     <h1>PDD - FIDC <span style="font-weight:300">I</span></h1>
@@ -195,91 +148,121 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ===============================
-# UPLOAD
-# ===============================
-upload = st.container()
-with upload:
-    st.markdown('<div class="upload-box">', unsafe_allow_html=True)
-    file = st.file_uploader("Upload", type=["xlsx", "csv"], label_visibility="collapsed")
-    st.markdown('</div>', unsafe_allow_html=True)
+# --- 5. UPLOAD ---
+upload_container = st.container()
+with upload_container:
+    uploaded_file = st.file_uploader(
+        "Carregar Base (.xlsx / .csv)",
+        type=['xlsx', 'csv'],
+        label_visibility="collapsed"
+    )
 
-progress_box = st.container()
+if uploaded_file:
+    with upload_container:
+        progress = st.progress(0)
+        status = st.empty()
 
-# ===============================
-# PROCESSAMENTO
-# ===============================
-if file:
-    with progress_box:
-        bar = st.progress(0)
-        st.caption("Processando...")
+    status.text("Lendo arquivo...")
+    df_raw, err = ler_e_limpar(uploaded_file)
+    progress.progress(30)
 
-    df = ler_base(file)
-    bar.progress(40)
+    if err:
+        st.error(err)
+    else:
+        cols = df_raw.columns.str.lower()
+        idx = {
+            'rat': next(i for i,c in enumerate(cols) if 'class' in c or 'nota' in c),
+            'val': next(i for i,c in enumerate(cols) if 'valor' in c),
+            'orn': next((i for i,c in enumerate(cols) if 'pddnota' in c), None),
+            'orv': next((i for i,c in enumerate(cols) if 'pddvenc' in c), None)
+        }
 
-    idx = {
-        "rat": next(i for i,c in enumerate(df.columns) if "class" in c.lower() or "nota" in c.lower()),
-        "val": next(i for i,c in enumerate(df.columns) if "valor" in c.lower())
-    }
+        status.text("Calculando...")
+        df = calcular_dataframe(df_raw, idx)
+        progress.progress(100)
+        progress.empty()
+        status.empty()
 
-    df = calcular(df, idx)
-    bar.progress(100)
-    bar.empty()
+        # --- 6. MÉTRICAS ---
+        tot_val = df.iloc[:, idx['val']].sum()
+        tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0
+        tot_orv = df.iloc[:, idx['orv']].sum() if idx['orv'] else 0
+        tot_cn = df['CALC_N'].sum()
+        tot_cv = df['CALC_V'].sum()
 
-    # ===============================
-    # MÉTRICAS
-    # ===============================
-    tot_val = df.iloc[:, idx['val']].sum()
-    tot_cn = df['CALC_N'].sum()
-    tot_cv = df['CALC_V'].sum()
+        colA, colB = st.columns(2)
+        with colA:
+            st.info("📋 **PDD Nota**")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Valor Presente", fmt_brl(tot_val))
+            c2.metric("Original", fmt_brl(tot_orn))
+            c3.metric("Calculado", fmt_brl(tot_cn))
+            c4.metric("Diferença", fmt_brl(tot_orn - tot_cn))
 
-    st.subheader("📋 PDD Nota")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Valor Presente", fmt(tot_val))
-    c2.metric("Calculado", fmt(tot_cn))
-    with c3:
-        metric_delta("Diferença", fmt(tot_val - tot_cn), tot_val - tot_cn)
+        with colB:
+            st.info("⏰ **PDD Vencido**")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Original", fmt_brl(tot_orv))
+            c2.metric("Calculado", fmt_brl(tot_cv))
+            c3.metric("Diferença", fmt_brl(tot_orv - tot_cv))
 
-    st.subheader("⏰ PDD Vencido")
-    c1, c2 = st.columns(2)
-    c1.metric("Calculado", fmt(tot_cv))
-    with c2:
-        metric_delta("Diferença", fmt(tot_cv), tot_cv)
+        # --- 7. DETALHAMENTO POR RATING (HTML) ---
+        st.info("**Detalhamento por Rating**")
 
-    # ===============================
-    # TABELA
-    # ===============================
-    grp = df.groupby(df.columns[idx['rat']]).agg({
-        df.columns[idx['val']]: "sum",
-        "CALC_N": "sum",
-        "CALC_V": "sum"
-    })
+        rat_name = df.columns[idx['rat']]
+        df_grp = df.groupby(rat_name).agg({
+            df.columns[idx['val']]: 'sum',
+            df.columns[idx['orn']]: 'sum' if idx['orn'] else lambda x: 0,
+            'CALC_N': 'sum',
+            df.columns[idx['orv']]: 'sum' if idx['orv'] else lambda x: 0,
+            'CALC_V': 'sum'
+        })
 
-    grp.loc["TOTAL"] = grp.sum()
-    grp = grp.reset_index()
-    grp.columns = ["Rating", "Valor Presente", "PDD Nota", "PDD Vencido"]
+        order = {k: v for v, k in enumerate(REGRAS['Rating'])}
+        df_grp['__ord'] = df_grp.index.map(order).fillna(99)
+        df_grp = df_grp.sort_values('__ord').drop(columns='__ord')
 
-    grp_fmt = grp.copy()
-    for c in grp.columns[1:]:
-        grp_fmt[c] = grp[c].apply(fmt)
+        df_grp.loc['TOTAL'] = df_grp.sum()
 
-    st.subheader("📊 Detalhamento por Rating")
-    render_table(grp_fmt)
+        df_fmt = df_grp.copy()
+        for c in df_fmt.columns:
+            df_fmt[c] = df_fmt[c].apply(fmt_brl)
 
-    # ===============================
-    # REGRAS
-    # ===============================
-    st.subheader("📚 Regras de Cálculo")
-    c1, c2 = st.columns(2)
-    with c1:
-        render_table(REGRAS, total=False)
-    with c2:
-        st.markdown("""
-        **PDD Nota**
-        - Pro rata entre aquisição e vencimento
+        df_fmt.columns = [
+            "Valor Presente",
+            "PDD Nota (Orig.)",
+            "PDD Nota (Calc.)",
+            "PDD Vencido (Orig.)",
+            "PDD Vencido (Calc.)"
+        ]
 
-        **PDD Vencido**
-        - ≤ 20 dias → 0%  
-        - 21–59 dias → linear  
-        - ≥ 60 dias → 100%
-        """)
+        render_table_html(df_fmt)
+
+        # --- 8. REGRAS DE CÁLCULO ---
+        with st.expander("📚 Ver Regras de Cálculo", expanded=False):
+            c1, c2 = st.columns(2)
+
+            with c1:
+                regras_fmt = REGRAS.copy()
+                regras_fmt["% Nota"] = regras_fmt["% Nota"].apply(lambda x: f"{x:.2%}")
+                regras_fmt["% Venc"] = regras_fmt["% Venc"].apply(lambda x: f"{x:.2%}")
+                render_table_html(regras_fmt.set_index("Rating"))
+
+            with c2:
+                st.markdown("""
+                ### 🧠 Lógica de Aplicação
+
+                **PDD Nota (Risco Sacado)**  
+                Pro rata temporis entre aquisição e vencimento.
+
+                ```
+                (Data Posição − Aquisição)
+                ─────────────────────────
+                (Vencimento − Aquisição)
+                ```
+
+                **PDD Vencido (Atraso)**  
+                - ≤ 20 dias → 0%  
+                - 21–59 dias → Linear  
+                - ≥ 60 dias → 100%
+                """)
