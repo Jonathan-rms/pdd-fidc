@@ -35,32 +35,50 @@ st.markdown("""
         color: #262730 !important;
     }
     
-    /* File Uploader - Redesenhado sem tracejado */
-    [data-testid="stFileUploader"] {
+    /* File Uploader - Forçar cores claras AGressivamente */
+    [data-testid="stFileUploader"], 
+    [data-testid="stFileUploader"] > div,
+    [data-testid="stFileUploader"] > div > div,
+    [data-testid="stFileUploader"] button,
+    [data-testid="stFileUploader"] .uploadedFile,
+    [data-testid="stFileUploader"] .uploadedFile > div {
         background-color: #ffffff !important;
+        background: #ffffff !important;
         border: 1px solid #e0e0e0 !important;
         border-radius: 8px !important;
-        padding: 16px !important;
+        color: #262730 !important;
     }
-    [data-testid="stFileUploader"] > div {
-        background-color: #ffffff !important;
+    [data-testid="stFileUploader"] button {
+        background-color: #f8f9fa !important;
+        background: #f8f9fa !important;
+        color: #262730 !important;
+        border: 1px solid #d0d0d0 !important;
+    }
+    [data-testid="stFileUploader"] button:hover {
+        background-color: #e9ecef !important;
+        background: #e9ecef !important;
     }
     [data-testid="stFileUploader"] * {
         color: #262730 !important;
     }
     [data-testid="stFileUploader"] .uploadedFile {
         background-color: #f8f9fa !important;
+        background: #f8f9fa !important;
         border: 1px solid #e0e0e0 !important;
         border-radius: 6px !important;
         padding: 12px !important;
     }
     [data-testid="stFileUploader"] .uploadedFile:hover {
         background-color: #f0f2f6 !important;
+        background: #f0f2f6 !important;
     }
     
-    /* Botões - Melhorado */
-    div.stButton > button {
+    /* Botões - Forçar cores claras em TODOS */
+    div.stButton > button,
+    button[data-testid="baseButton-secondary"],
+    button[data-testid="baseButton-primary"] {
         background-color: #0030B9 !important;
+        background: #0030B9 !important;
         color: white !important;
         border-radius: 8px !important;
         border: none !important;
@@ -70,30 +88,52 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
         transition: all 0.2s ease !important;
     }
-    div.stButton > button:hover {
+    div.stButton > button:hover,
+    button[data-testid="baseButton-secondary"]:hover,
+    button[data-testid="baseButton-primary"]:hover {
         background-color: #001074 !important;
+        background: #001074 !important;
         color: white !important;
         box-shadow: 0 4px 8px rgba(0,48,185,0.3) !important;
         transform: translateY(-1px) !important;
     }
+    /* Download button específico */
+    button[kind="secondary"],
+    button[class*="download"] {
+        background-color: #0030B9 !important;
+        background: #0030B9 !important;
+        color: white !important;
+    }
     
-    /* Tabelas e DataFrames - Cores claras garantidas */
-    div[data-testid="stDataFrame"] {
+    /* Tabelas e DataFrames - Cores claras FORÇADAS */
+    div[data-testid="stDataFrame"],
+    div[data-testid="stDataFrame"] > div,
+    div[data-testid="stDataFrame"] table,
+    div[data-testid="stDataFrame"] tbody,
+    div[data-testid="stDataFrame"] tbody tr,
+    div[data-testid="stDataFrame"] tbody td {
         background-color: #ffffff !important;
+        background: #ffffff !important;
+        color: #262730 !important;
+    }
+    div[data-testid="stDataFrame"] {
         padding: 0 !important;
         border-radius: 8px !important;
         border: 1px solid #e0e0e0 !important;
         overflow: hidden !important;
     }
     div[data-testid="stDataFrame"] table {
-        background-color: #ffffff !important;
         border-collapse: collapse !important;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
     }
     div[data-testid="stDataFrame"] thead {
         background-color: #e8f0fe !important;
+        background: #e8f0fe !important;
     }
     div[data-testid="stDataFrame"] th {
         background-color: #e8f0fe !important;
+        background: #e8f0fe !important;
         color: #0030B9 !important;
         font-size: 14px !important;
         font-weight: 600 !important;
@@ -102,12 +142,18 @@ st.markdown("""
     }
     div[data-testid="stDataFrame"] td {
         background-color: #ffffff !important;
+        background: #ffffff !important;
         color: #262730 !important;
         padding: 10px 12px !important;
         border-bottom: 1px solid #f0f0f0 !important;
     }
+    div[data-testid="stDataFrame"] tr {
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+    }
     div[data-testid="stDataFrame"] tr:hover td {
         background-color: #f8f9fa !important;
+        background: #f8f9fa !important;
     }
     
     /* Info boxes - Melhorado */
@@ -163,6 +209,39 @@ st.markdown("""
     .element-container, .stMarkdown, .stText {
         background-color: transparent !important;
         color: #262730 !important;
+    }
+    
+    /* Forçar cores em elementos específicos do Streamlit */
+    section[data-testid="stSidebar"],
+    div[class*="stDownloadButton"],
+    div[class*="stFileUploader"] {
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+    }
+    
+    /* Override de qualquer estilo escuro */
+    *[style*="background-color: rgb(38, 39, 48)"],
+    *[style*="background-color: #262730"],
+    *[style*="background: rgb(38, 39, 48)"],
+    *[style*="background: #262730"] {
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+    }
+    
+    /* Scrollbar claro */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -265,7 +344,8 @@ def calcular_dataframe(df, idx):
 
 def gerar_excel_final(df_original, calc_data):
     output = io.BytesIO()
-    wb = pd.ExcelWriter(output, engine='xlsxwriter')
+    # Usar constant_memory para melhor performance com arquivos grandes
+    wb = pd.ExcelWriter(output, engine='xlsxwriter', options={'constant_memory': True})
     bk = wb.book
     
     base_fmt = {'font_name': 'Montserrat', 'font_size': 9}
@@ -375,33 +455,31 @@ def gerar_excel_final(df_original, calc_data):
     col_pdd_venc_calc = c_idx["PDD Vencido Calc"]
     col_dif_venc = c_idx["Dif Vencido"]
     
-    # Preparar arrays de fórmulas (muito mais rápido que loop individual)
-    formulas_dias_aq_venc = [f'={L["venc"]}{i+2}-{L["aq"]}{i+2}' for i in range(total_rows)]
-    formulas_dias_atraso = [f'={L["pos"]}{i+2}-{L["venc"]}{i+2}' for i in range(total_rows)]
-    formulas_pdd_nota = [f'=VLOOKUP({L["rat"]}{i+2},Regras_Sistema!$A:$C,2,0)' for i in range(total_rows)]
-    formulas_pdd_nota_prorata = [f'=IF({L["rat"]}{i+2}="H", 1, IF({CL_dias_aq_venc}{i+2}=0,0,MIN(1,MAX(0,({L["pos"]}{i+2}-{L["aq"]}{i+2})/{CL_dias_aq_venc}{i+2}))))' for i in range(total_rows)]
-    formulas_pdd_nota_final = [f'=IF({CL_pdd_nota_prorata}{i+2}=0, {CL_pdd_nota}{i+2}, {CL_pdd_nota}{i+2}*{CL_pdd_nota_prorata}{i+2})' for i in range(total_rows)]
-    formulas_pdd_venc = [f'=VLOOKUP({L["rat"]}{i+2},Regras_Sistema!$A:$C,3,0)' for i in range(total_rows)]
-    formulas_pdd_venc_prorata = [f'=IF({CL_dias_atraso}{i+2}<=20,0,IF({CL_dias_atraso}{i+2}>=60,1,({CL_dias_atraso}{i+2}-20)/40))' for i in range(total_rows)]
-    formulas_pdd_venc_final = [f'={CL_pdd_venc}{i+2}*{CL_pdd_venc_prorata}{i+2}' for i in range(total_rows)]
-    formulas_pdd_nota_calc = [f'={L["val"]}{i+2}*{CL_pdd_nota_final}{i+2}' for i in range(total_rows)]
-    formulas_dif_nota = [f'=ABS({CL_pdd_nota_calc}{i+2}-{orig_n_base}{i+2})' for i in range(total_rows)]
-    formulas_pdd_venc_calc = [f'={L["val"]}{i+2}*{CL_pdd_venc_final}{i+2}' for i in range(total_rows)]
-    formulas_dif_venc = [f'=ABS({CL_pdd_venc_calc}{i+2}-{orig_v_base}{i+2})' for i in range(total_rows)]
+    # Otimização máxima: escrever fórmulas em batches grandes
+    # Preparar todas as strings de fórmulas de uma vez (evita formatação repetida)
+    batch_size = 1000  # Processar em lotes para melhor performance
     
-    # Escrever arrays de fórmulas de uma vez usando write_column (MUITO mais rápido)
-    ws.write_column(1, col_dias_aq_venc, formulas_dias_aq_venc, f_num)
-    ws.write_column(1, col_dias_atraso, formulas_dias_atraso, f_num)
-    ws.write_column(1, col_pdd_nota, formulas_pdd_nota, f_pct)
-    ws.write_column(1, col_pdd_nota_prorata, formulas_pdd_nota_prorata, f_pct)
-    ws.write_column(1, col_pdd_nota_final, formulas_pdd_nota_final, f_pct)
-    ws.write_column(1, col_pdd_venc, formulas_pdd_venc, f_pct)
-    ws.write_column(1, col_pdd_venc_prorata, formulas_pdd_venc_prorata, f_pct)
-    ws.write_column(1, col_pdd_venc_final, formulas_pdd_venc_final, f_pct)
-    ws.write_column(1, col_pdd_nota_calc, formulas_pdd_nota_calc, f_money)
-    ws.write_column(1, col_dif_nota, formulas_dif_nota, f_money)
-    ws.write_column(1, col_pdd_venc_calc, formulas_pdd_venc_calc, f_money)
-    ws.write_column(1, col_dif_venc, formulas_dif_venc, f_money)
+    for batch_start in range(0, total_rows, batch_size):
+        batch_end = min(batch_start + batch_size, total_rows)
+        
+        # Preparar fórmulas do batch
+        for i in range(batch_start, batch_end):
+            r = str(i + 2)
+            row = i + 1
+            
+            # Escrever todas as fórmulas da linha sequencialmente (melhor cache)
+            write(row, col_dias_aq_venc, f'={L["venc"]}{r}-{L["aq"]}{r}', f_num)
+            write(row, col_dias_atraso, f'={L["pos"]}{r}-{L["venc"]}{r}', f_num)
+            write(row, col_pdd_nota, f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,2,0)', f_pct)
+            write(row, col_pdd_nota_prorata, f'=IF({L["rat"]}{r}="H", 1, IF({CL_dias_aq_venc}{r}=0,0,MIN(1,MAX(0,({L["pos"]}{r}-{L["aq"]}{r})/{CL_dias_aq_venc}{r}))))', f_pct)
+            write(row, col_pdd_nota_final, f'=IF({CL_pdd_nota_prorata}{r}=0, {CL_pdd_nota}{r}, {CL_pdd_nota}{r}*{CL_pdd_nota_prorata}{r})', f_pct)
+            write(row, col_pdd_venc, f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,3,0)', f_pct)
+            write(row, col_pdd_venc_prorata, f'=IF({CL_dias_atraso}{r}<=20,0,IF({CL_dias_atraso}{r}>=60,1,({CL_dias_atraso}{r}-20)/40))', f_pct)
+            write(row, col_pdd_venc_final, f'={CL_pdd_venc}{r}*{CL_pdd_venc_prorata}{r}', f_pct)
+            write(row, col_pdd_nota_calc, f'={L["val"]}{r}*{CL_pdd_nota_final}{r}', f_money)
+            write(row, col_dif_nota, f'=ABS({CL_pdd_nota_calc}{r}-{orig_n_base}{r})', f_money)
+            write(row, col_pdd_venc_calc, f'={L["val"]}{r}*{CL_pdd_venc_final}{r}', f_money)
+            write(row, col_dif_venc, f'=ABS({CL_pdd_venc_calc}{r}-{orig_v_base}{r})', f_money)
 
     # 4. RESUMO
     ws_res = bk.add_worksheet('Resumo')
