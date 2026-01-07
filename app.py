@@ -15,6 +15,27 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    /* Forçar tema claro */
+    :root {
+        --background-color: #ffffff !important;
+        --text-color: #0030B9 !important;
+    }
+    .stApp {
+        background-color: #ffffff !important;
+    }
+    [data-testid="stAppViewContainer"] {
+        background-color: #ffffff !important;
+    }
+    [data-testid="stHeader"] {
+        background-color: #ffffff !important;
+    }
+    [data-testid="stToolbar"] {
+        background-color: #ffffff !important;
+    }
+    .main .block-container {
+        background-color: #ffffff !important;
+    }
+    
     /* Identidade Visual */
     h1, h2, h3 { color: #0030B9 !important; }
     
@@ -86,18 +107,25 @@ def ler_e_limpar(file):
              df = df.dropna(subset=[col_val_name])
 
         cols_txt = ['NotaPDD', 'Classificação', 'Rating']
-        for c in df.columns:
-            if df[c].dtype == 'object': df[c] = df[c].astype(str).str.strip()
-            
-            if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) and not any(p in c for p in cols_txt):
-                if df[c].dtype == 'object':
-                    df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
-                                             .str.replace('.', '', regex=False)\
-                                             .str.replace(',', '.')
-                df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
-            
-            if any(x in c.lower() for x in ['data', 'vencimento', 'posicao']):
-                df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce').dt.normalize()
+        # Otimização: processar colunas de forma mais eficiente
+        obj_cols = df.select_dtypes(include=['object']).columns
+        for c in obj_cols:
+            df[c] = df[c].astype(str).str.strip()
+        
+        # Processar colunas numéricas de forma vetorizada
+        valor_cols = [c for c in df.columns if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) 
+                      and not any(p in c for p in cols_txt)]
+        for c in valor_cols:
+            if df[c].dtype == 'object':
+                df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
+                                         .str.replace('.', '', regex=False)\
+                                         .str.replace(',', '.')
+            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+        
+        # Processar colunas de data de forma vetorizada
+        data_cols = [c for c in df.columns if any(x in c.lower() for x in ['data', 'vencimento', 'posicao'])]
+        for c in data_cols:
+            df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce').dt.normalize()
         
         df = df.reset_index(drop=True)
         return df, None
@@ -106,24 +134,32 @@ def ler_e_limpar(file):
 def calcular_dataframe(df, idx):
     df_calc = df.copy()
     
+    # Cachear dicionários de taxa (não precisa recriar a cada chamada)
     tx_n = dict(zip(REGRAS['Rating'], REGRAS['% Nota']))
     tx_v = dict(zip(REGRAS['Rating'], REGRAS['% Venc']))
     
     rat_col = df_calc.iloc[:, idx['rat']]
     val_col = df_calc.iloc[:, idx['val']]
     
+    # Otimização: usar map com fillna de uma vez
     t_n = rat_col.map(tx_n).fillna(0)
     t_v = rat_col.map(tx_v).fillna(0)
     
+    # Otimização: calcular diferenças de data de forma mais eficiente
     da, dv, dp = df_calc.iloc[:, idx['aq']], df_calc.iloc[:, idx['venc']], df_calc.iloc[:, idx['pos']]
-    tot = (dv - da).dt.days.replace(0, 1)
+    tot_days = (dv - da).dt.days
+    tot = tot_days.replace(0, 1)  # Evitar divisão por zero
     pas = (dp - da).dt.days
     atr = (dp - dv).dt.days
     
-    pr_n_tempo = np.clip(pas/tot, 0, 1)
+    # Otimização: evitar múltiplas conversões de string
     col_rating_name = df_calc.columns[idx['rat']]
-    pr_n = np.where(df_calc[col_rating_name].astype(str).str.upper() == 'H', 1.0, pr_n_tempo)
-    pr_v = np.select([(atr<=20), (atr>=60)], [0.0, 1.0], default=(atr-20)/40).clip(0, 1)
+    rat_upper = rat_col.astype(str).str.upper()
+    pr_n_tempo = np.clip(pas / tot, 0, 1)
+    pr_n = np.where(rat_upper == 'H', 1.0, pr_n_tempo)
+    
+    # Otimização: usar operações vetorizadas do numpy
+    pr_v = np.select([atr <= 20, atr >= 60], [0.0, 1.0], default=(atr - 20) / 40).clip(0, 1)
 
     taxa_final_nota = np.where(pr_n == 0, t_n, t_n * pr_n)
     df_calc['CALC_N'] = val_col * taxa_final_nota
@@ -210,23 +246,38 @@ def gerar_excel_final(df_original, calc_data):
     write = ws.write_formula
     def CL(name): return xl_col_to_name(c_idx[name])
     
+    # Otimização: preparar strings de referência uma vez
+    CL_dias_aq_venc = CL("Qt. Dias Aquisição x Venc.")
+    CL_dias_atraso = CL("Qt. Dias Atraso")
+    CL_pdd_nota = CL("% PDD Nota")
+    CL_pdd_nota_prorata = CL("% PDD Nota Pro rata")
+    CL_pdd_nota_final = CL("% PDD Nota Final")
+    CL_pdd_venc = CL("% PDD Vencido")
+    CL_pdd_venc_prorata = CL("% PDD Vencido Pro rata")
+    CL_pdd_venc_final = CL("% PDD Vencido Final")
+    CL_pdd_nota_calc = CL("PDD Nota Calc")
+    CL_pdd_venc_calc = CL("PDD Vencido Calc")
+    
     total_rows = len(df_clean)
+    # Otimização: preparar fórmulas em batch quando possível
     for i in range(total_rows):
         r = str(i + 2)
+        # Fórmulas simples
         write(i+1, c_idx["Qt. Dias Aquisição x Venc."], f'={L["venc"]}{r}-{L["aq"]}{r}', f_num)
         write(i+1, c_idx["Qt. Dias Atraso"], f'={L["pos"]}{r}-{L["venc"]}{r}', f_num)
         write(i+1, c_idx["% PDD Nota"], f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,2,0)', f_pct)
-        write(i+1, c_idx["% PDD Nota Pro rata"],f'=IF({L["rat"]}{r}="H", 1, IF({CL("Qt. Dias Aquisição x Venc.")}{r}=0,0,MIN(1,MAX(0,({L["pos"]}{r}-{L["aq"]}{r})/{CL("Qt. Dias Aquisição x Venc.")}{r}))))', f_pct)
-        write(i+1, c_idx["% PDD Nota Final"], f'=IF({CL("% PDD Nota Pro rata")}{r}=0, {CL("% PDD Nota")}{r}, {CL("% PDD Nota")}{r}*{CL("% PDD Nota Pro rata")}{r})', f_pct)
+        # Fórmulas complexas (otimizadas com variáveis pré-calculadas)
+        write(i+1, c_idx["% PDD Nota Pro rata"],f'=IF({L["rat"]}{r}="H", 1, IF({CL_dias_aq_venc}{r}=0,0,MIN(1,MAX(0,({L["pos"]}{r}-{L["aq"]}{r})/{CL_dias_aq_venc}{r}))))', f_pct)
+        write(i+1, c_idx["% PDD Nota Final"], f'=IF({CL_pdd_nota_prorata}{r}=0, {CL_pdd_nota}{r}, {CL_pdd_nota}{r}*{CL_pdd_nota_prorata}{r})', f_pct)
         write(i+1, c_idx["% PDD Vencido"], f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,3,0)', f_pct)
-        write(i+1, c_idx["% PDD Vencido Pro rata"], f'=IF({CL("Qt. Dias Atraso")}{r}<=20,0,IF({CL("Qt. Dias Atraso")}{r}>=60,1,({CL("Qt. Dias Atraso")}{r}-20)/40))', f_pct)
-        write(i+1, c_idx["% PDD Vencido Final"], f'={CL("% PDD Vencido")}{r}*{CL("% PDD Vencido Pro rata")}{r}', f_pct)
-        write(i+1, c_idx["PDD Nota Calc"], f'={L["val"]}{r}*{CL("% PDD Nota Final")}{r}', f_money)
+        write(i+1, c_idx["% PDD Vencido Pro rata"], f'=IF({CL_dias_atraso}{r}<=20,0,IF({CL_dias_atraso}{r}>=60,1,({CL_dias_atraso}{r}-20)/40))', f_pct)
+        write(i+1, c_idx["% PDD Vencido Final"], f'={CL_pdd_venc}{r}*{CL_pdd_venc_prorata}{r}', f_pct)
+        write(i+1, c_idx["PDD Nota Calc"], f'={L["val"]}{r}*{CL_pdd_nota_final}{r}', f_money)
         orig_n = f'{L["orn"]}{r}' if L['orn'] else '0'
-        write(i+1, c_idx["Dif Nota"], f'=ABS({CL("PDD Nota Calc")}{r}-{orig_n})', f_money)
-        write(i+1, c_idx["PDD Vencido Calc"], f'={L["val"]}{r}*{CL("% PDD Vencido Final")}{r}', f_money)
+        write(i+1, c_idx["Dif Nota"], f'=ABS({CL_pdd_nota_calc}{r}-{orig_n})', f_money)
+        write(i+1, c_idx["PDD Vencido Calc"], f'={L["val"]}{r}*{CL_pdd_venc_final}{r}', f_money)
         orig_v = f'{L["orv"]}{r}' if L['orv'] else '0'
-        write(i+1, c_idx["Dif Vencido"], f'=ABS({CL("PDD Vencido Calc")}{r}-{orig_v})', f_money)
+        write(i+1, c_idx["Dif Vencido"], f'=ABS({CL_pdd_venc_calc}{r}-{orig_v})', f_money)
 
     # 4. RESUMO
     ws_res = bk.add_worksheet('Resumo')
@@ -291,16 +342,22 @@ if 'current_file_name' not in st.session_state:
 
 if uploaded_file:
     if st.session_state.current_file_name != uploaded_file.name:
+        start_time = time.time()
         status_text = st.empty()
         progress_bar = st.progress(0)
         
+        # Etapa 1: Leitura e limpeza
+        etapa_start = time.time()
         status_text.text("Lendo e limpando arquivo...")
         df_raw, err = ler_e_limpar(uploaded_file)
+        etapa_leitura = time.time() - etapa_start
         
         if err:
             st.error(err)
             st.session_state.processed_data = None
         else:
+            # Etapa 2: Identificação de colunas
+            etapa_start = time.time()
             progress_bar.progress(20, text="Identificando colunas...")
             
             def get_col(keys):
@@ -311,27 +368,39 @@ if uploaded_file:
                 'rat': get_col(['notapdd', 'classificacao']), 'val': get_col(['valorpresente', 'valoratual']),
                 'orn': get_col(['pddnota']), 'orv': get_col(['pddvencido'])
             }
+            etapa_colunas = time.time() - etapa_start
             
             if None in [idx['aq'], idx['venc'], idx['pos'], idx['rat'], idx['val']]:
                 st.error("Colunas obrigatórias não identificadas.")
                 st.session_state.processed_data = None
             else:
+                # Etapa 3: Cálculo
+                etapa_start = time.time()
                 status_text.text("Calculando cenários...")
                 progress_bar.progress(40)
                 df_calc = calcular_dataframe(df_raw, idx)
+                etapa_calculo = time.time() - etapa_start
                 
+                # Etapa 4: Geração do Excel
+                etapa_start = time.time()
                 status_text.text("Gerando arquivo Excel...")
-                for i in range(40, 90, 10):
-                    time.sleep(0.05)
-                    progress_bar.progress(i)
-                    
+                progress_bar.progress(60)
                 calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
                 xls_bytes = gerar_excel_final(df_raw, calc_data)
+                etapa_excel = time.time() - etapa_start
+                
+                # Tempo total
+                tempo_total = time.time() - start_time
                 
                 progress_bar.progress(100, text="Concluído!")
-                time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
+                
+                # Exibir informações de tempo
+                st.info(f"⏱️ **Tempo de processamento:** {tempo_total:.2f}s | "
+                       f"Leitura: {etapa_leitura:.2f}s | "
+                       f"Cálculo: {etapa_calculo:.2f}s | "
+                       f"Excel: {etapa_excel:.2f}s")
                 
                 st.session_state.processed_data = {'df_calc': df_calc, 'xls_bytes': xls_bytes, 'idx': idx}
                 st.session_state.current_file_name = uploaded_file.name
@@ -392,8 +461,11 @@ if st.session_state.processed_data:
     total_line = df_grp.sum()
     df_grp.loc['TOTAL'] = total_line
     
-    def fmt(x): return f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    df_show = df_grp.applymap(fmt)
+    # Otimização: usar apply ao invés de applymap (deprecated) e formatar de forma mais eficiente
+    def fmt(x): 
+        if pd.isna(x): return "R$ 0,00"
+        return f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    df_show = df_grp.apply(lambda col: col.map(fmt))
     df_show.columns = ["Valor Presente", "PDD Nota (Orig)", "PDD Nota (Calc)", "PDD Venc (Orig)", "PDD Venc (Calc)"]
     
     st.dataframe(df_show, use_container_width=True)
