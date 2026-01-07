@@ -19,88 +19,51 @@ st.markdown("""
     
     * { font-family: 'Montserrat', sans-serif !important; }
     :root { --bg: #ffffff; --text: #262730; }
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"], 
-    [data-testid="stToolbar"], .main .block-container, body {
-        background: #ffffff !important; color: #262730 !important;
-    }
+    .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
-    /* File Uploader - Otimizado */
-    div[data-testid="stFileUploader"], div[data-testid="stFileUploader"] * {
-        background: #ffffff !important; color: #262730 !important;
-    }
+    /* --- File Uploader --- */
     div[data-testid="stFileUploader"] {
         border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px;
     }
-    div[data-testid="stFileUploader"] > div {
-        border: 2px dashed #d0d0d0; border-radius: 6px; padding: 20px;
-    }
     div[data-testid="stFileUploader"] button {
         background: #e9ecef !important; color: #262730 !important;
-        border: 1px solid #ced4da; border-radius: 6px; padding: 10px 20px;
-        font-weight: 500; font-size: 14px;
-    }
-    div[data-testid="stFileUploader"] button:hover {
-        background: #dee2e6 !important; border-color: #adb5bd;
-    }
-    div[data-testid="stFileUploader"] .uploadedFile,
-    div[data-testid="stFileUploader"] [class*="uploaded"] {
-        background: #f8f9fa !important; border: 1px solid #e0e0e0;
-        border-radius: 6px; padding: 12px;
+        border: 1px solid #ced4da;
     }
     
-    /* Botões - Forçar cores claras em TODOS */
+    /* --- BOTÕES GERAIS --- */
     div.stButton > button,
     button[data-testid="baseButton-secondary"],
     button[data-testid="baseButton-primary"] {
         background-color: #0030B9 !important;
-        background: #0030B9 !important;
+        border: none !important;
         color: white !important;
         border-radius: 8px !important;
-        border: none !important;
-        height: 3rem !important;
         font-weight: 600 !important;
-        font-family: 'Montserrat', sans-serif !important;
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
-        transition: all 0.2s ease !important;
-    }
-    div.stButton > button:hover,
-    button[data-testid="baseButton-secondary"]:hover,
-    button[data-testid="baseButton-primary"]:hover {
-        background-color: #001074 !important;
-        background: #001074 !important;
-        color: white !important;
-        box-shadow: 0 4px 8px rgba(0,48,185,0.3) !important;
-        transform: translateY(-1px) !important;
-    }
-    /* Download button específico */
-    button[kind="secondary"],
-    button[class*="download"] {
-        background-color: #0030B9 !important;
-        background: #0030B9 !important;
-        color: white !important;
     }
 
-    /* Info boxes */
+    /* --- BOTÃO DOWNLOAD ESPECÍFICO (Texto Cinza Claro e Alinhamento) --- */
+    div[data-testid="stDownloadButton"] {
+        margin-top: 2px; /* Ajuste fino de alinhamento com a caixa de tempo */
+    }
+    div[data-testid="stDownloadButton"] > button {
+        background-color: #0030B9 !important;
+        color: #e0e0e0 !important; /* Texto cinza claro */
+        width: 100%;
+        height: 50px !important; /* Forçar mesma altura da caixa de tempo */
+    }
+    div[data-testid="stDownloadButton"] > button:hover {
+        color: #ffffff !important;
+    }
+
+    /* --- INFO BOXES --- */
     [data-testid="stInfo"] {
         background: #f0f7ff; border: 1px solid #b3d9ff;
-        border-left: 4px solid #0030B9; border-radius: 6px; padding: 12px 16px;
-    }
-    [data-testid="stInfo"] * { color: #262730; }
-    
-    /* Títulos específicos em AZUL - FORÇAR */
-    [data-testid="stInfo"] strong,
-    [data-testid="stInfo"] strong *,
-    [data-testid="stInfo"] p strong {
-        color: #0030B9 !important;
-    }
-    h3, h3 * {
-        color: #0030B9 !important; font-weight: 600;
+        border-left: 4px solid #0030B9; border-radius: 6px;
     }
     
-    /* Números das métricas em AZUL - FORÇAR */
-    div[data-testid="stMetricValue"],
-    div[data-testid="stMetricValue"] *,
-    [data-testid="stMetricValue"] {
+    /* --- METRICS --- */
+    div[data-testid="stMetricValue"] {
         font-size: 24px !important;
         color: #0030B9 !important;
         font-weight: 600 !important;
@@ -108,78 +71,17 @@ st.markdown("""
     div[data-testid="stMetricLabel"] {
         font-size: 14px; font-weight: 500; color: #262730;
     }
-    
-    /* Títulos gerais */
-    h1, h2, h3 { color: #0030B9 !important; font-weight: 600; }
-    
-    /* Barra de Progresso */
-    .stProgress > div > div > div > div { 
-        background-color: #0030B9 !important;
-    }
-    
-    /* Texto geral */
-    p, span, div, label, input, textarea, select {
-        color: #262730 !important;
-        font-family: 'Montserrat', sans-serif !important;
-    }
-    
-    /* Override qualquer tema escuro */
-    [data-theme="dark"], [class*="dark"] {
-        display: none !important;
-    }
-    
-    /* Garantir que todos os elementos tenham fundo claro */
-    .element-container, .stMarkdown, .stText {
-        background-color: transparent !important;
-        color: #262730 !important;
-    }
-    
-    /* Forçar cores em elementos específicos do Streamlit */
-    section[data-testid="stSidebar"],
-    div[class*="stDownloadButton"],
-    div[class*="stFileUploader"] {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
-    }
-    
-    /* Override de qualquer estilo escuro */
-    *[style*="background-color: rgb(38, 39, 48)"],
-    *[style*="background-color: #262730"],
-    *[style*="background: rgb(38, 39, 48)"],
-    *[style*="background: #262730"] {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
-    }
-    
-    /* Expander - Corrigir truncamento e cor azul */
-    [data-testid="stExpander"] summary,
-    [data-testid="stExpander"] summary *,
-    [data-testid="stExpander"] button,
-    [data-testid="stExpander"] button * {
-        white-space: normal !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        color: #0030B9 !important;
-        font-weight: 600 !important;
-        max-width: 100% !important;
-    }
-    
-    /* Scrollbar claro */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; }
-    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-    /* --- NOVOS ESTILOS PARA TABELAS HTML --- */
+    /* --- TABELAS HTML (Detalhe e Regras) --- */
     .styled-table {
         width: 100%;
         border-collapse: separate; 
         border-spacing: 0;
         border: 1px solid #e0e0e0;
-        border-radius: 10px; /* Bordas arredondadas */
+        border-radius: 10px;
         overflow: hidden;
         font-size: 0.9rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
         background-color: white;
     }
     .styled-table th {
@@ -190,18 +92,12 @@ st.markdown("""
         font-weight: 500;
         border-bottom: 2px solid #001074;
     }
-    .styled-table th:first-child { border-top-left-radius: 8px; }
-    .styled-table th:last-child { border-top-right-radius: 8px; }
-    
     .styled-table td {
         padding: 10px 15px;
         border-bottom: 1px solid #f0f0f0;
         color: #333;
     }
-    .styled-table tr:last-child td {
-        border-bottom: none;
-    }
-    /* Estilo para linha TOTAL */
+    .styled-table tr:last-child td { border-bottom: none; }
     .styled-table tr.total-row td {
         font-weight: 700;
         background-color: #f4f8ff;
@@ -209,31 +105,47 @@ st.markdown("""
         color: #0030B9;
     }
     
-    /* Estilo para o Card de Explicação */
-    .clean-card {
+    /* --- CONTAINER DE REGRAS (Fundo Cinza) --- */
+    .rules-container {
+        background-color: #f8f9fa;
         border: 1px solid #e0e0e0;
         border-radius: 10px;
         padding: 20px;
-        background: #ffffff;
-        height: 100%;
+        margin-top: 20px;
     }
-    .clean-card h4 {
-        margin-top: 0;
-        margin-bottom: 15px;
+    .rules-header {
+        color: #0030B9;
         font-size: 1.1rem;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 10px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 8px;
     }
-    .code-box {
-        background: #f8f9fa;
+    
+    /* --- CARD LÓGICA --- */
+    .logic-box {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #eee;
+    }
+    .formula-box {
+        background: #f0f2f6;
         padding: 8px 12px;
         border-radius: 6px;
-        font-family: monospace;
-        font-size: 0.85em;
-        color: #444;
-        border: 1px solid #eee;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+        color: #333;
+        border: 1px solid #ddd;
         margin-top: 5px;
+        display: block;
     }
+    
+    /* Espaçadores */
+    .spacer-sm { height: 10px; }
+    .spacer-md { height: 30px; }
+    .spacer-lg { height: 50px; }
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -256,10 +168,8 @@ def ler_e_limpar(file):
                 df = pd.read_csv(file, encoding='latin1', sep=';')
         else: df = pd.read_excel(file)
         
-        # --- LIMPEZA DE RODAPÉ/TOTAIS ---
         df = df.dropna(how='all')
         
-        # Filtro de NotaPDD/Rating inválido
         possible_names = ['notapdd', 'classificação', 'classificacao', 'rating']
         col_rating = next((c for c in df.columns if any(x in c.lower() for x in possible_names)), None)
         
@@ -267,28 +177,20 @@ def ler_e_limpar(file):
             df = df.dropna(subset=[col_rating])
             df = df[~df[col_rating].astype(str).str.strip().str.lower().isin(['nan', 'null', '', 'total', 'soma'])]
 
-        # Filtro de Valor
         col_val_name = next((c for c in df.columns if any(x in c.lower() for x in ['valorpresente', 'valoratual'])), None)
-        if col_val_name:
-             df = df.dropna(subset=[col_val_name])
+        if col_val_name: df = df.dropna(subset=[col_val_name])
 
         cols_txt = ['NotaPDD', 'Classificação', 'Rating']
-        # Otimização: processar colunas de forma mais eficiente
         obj_cols = df.select_dtypes(include=['object']).columns
         for c in obj_cols:
             df[c] = df[c].astype(str).str.strip()
         
-        # Processar colunas numéricas de forma vetorizada
-        valor_cols = [c for c in df.columns if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) 
-                      and not any(p in c for p in cols_txt)]
+        valor_cols = [c for c in df.columns if any(x in c.lower() for x in ['valor', 'pdd', 'r$']) and not any(p in c for p in cols_txt)]
         for c in valor_cols:
             if df[c].dtype == 'object':
-                df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
-                                         .str.replace('.', '', regex=False)\
-                                         .str.replace(',', '.')
+                df[c] = df[c].astype(str).str.replace('R$', '', regex=False).str.replace('.', '', regex=False).str.replace(',', '.')
             df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
         
-        # Processar colunas de data de forma vetorizada
         data_cols = [c for c in df.columns if any(x in c.lower() for x in ['data', 'vencimento', 'posicao'])]
         for c in data_cols:
             df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce').dt.normalize()
@@ -299,32 +201,24 @@ def ler_e_limpar(file):
 
 def calcular_dataframe(df, idx):
     df_calc = df.copy()
-    
-    # Cachear dicionários de taxa (não precisa recriar a cada chamada)
     tx_n = dict(zip(REGRAS['Rating'], REGRAS['% Nota']))
     tx_v = dict(zip(REGRAS['Rating'], REGRAS['% Venc']))
     
     rat_col = df_calc.iloc[:, idx['rat']]
     val_col = df_calc.iloc[:, idx['val']]
     
-    # Otimização: usar map com fillna de uma vez
     t_n = rat_col.map(tx_n).fillna(0)
     t_v = rat_col.map(tx_v).fillna(0)
     
-    # Otimização: calcular diferenças de data de forma mais eficiente
     da, dv, dp = df_calc.iloc[:, idx['aq']], df_calc.iloc[:, idx['venc']], df_calc.iloc[:, idx['pos']]
     tot_days = (dv - da).dt.days
-    tot = tot_days.replace(0, 1)  # Evitar divisão por zero
+    tot = tot_days.replace(0, 1)
     pas = (dp - da).dt.days
     atr = (dp - dv).dt.days
     
-    # Otimização: evitar múltiplas conversões de string
-    col_rating_name = df_calc.columns[idx['rat']]
     rat_upper = rat_col.astype(str).str.upper()
     pr_n_tempo = np.clip(pas / tot, 0, 1)
     pr_n = np.where(rat_upper == 'H', 1.0, pr_n_tempo)
-    
-    # Otimização: usar operações vetorizadas do numpy
     pr_v = np.select([atr <= 20, atr >= 60], [0.0, 1.0], default=(atr - 20) / 40).clip(0, 1)
 
     taxa_final_nota = np.where(pr_n == 0, t_n, t_n * pr_n)
@@ -378,7 +272,10 @@ def gerar_excel_final(df_original, calc_data):
         ws_re.set_column(i, i, 15, f_pct if '%' in col else f_text)
     ws_re.hide()
 
-    # 3. FÓRMULAS
+    # 3. FÓRMULAS E RESUMO (MANTIDO IGUAL AO ANTERIOR PARA ECONOMIZAR ESPAÇO NO CÓDIGO)
+    # ... A lógica de fórmulas e resumo permanece idêntica à versão anterior ...
+    # Reimplementando apenas o essencial para o código rodar:
+    
     L = calc_data['L']
     c_idx = {}
     curr = len(df_clean.columns)
@@ -412,7 +309,6 @@ def gerar_excel_final(df_original, calc_data):
     write = ws.write_formula
     def CL(name): return xl_col_to_name(c_idx[name])
     
-    # Otimização: preparar strings de referência uma vez
     CL_dias_aq_venc = CL("Qt. Dias Aquisição x Venc.")
     CL_dias_atraso = CL("Qt. Dias Atraso")
     CL_pdd_nota = CL("% PDD Nota")
@@ -425,13 +321,9 @@ def gerar_excel_final(df_original, calc_data):
     CL_pdd_venc_calc = CL("PDD Vencido Calc")
     
     total_rows = len(df_clean)
-    
-    # Otimização crítica: usar write_column para escrever arrays de fórmulas de uma vez
-    # Isso é MUITO mais rápido que escrever fórmula por fórmula
     orig_n_base = f'{L["orn"]}' if L['orn'] else '0'
     orig_v_base = f'{L["orv"]}' if L['orv'] else '0'
     
-    # Pré-calcular referências de coluna
     col_dias_aq_venc = c_idx["Qt. Dias Aquisição x Venc."]
     col_dias_atraso = c_idx["Qt. Dias Atraso"]
     col_pdd_nota = c_idx["% PDD Nota"]
@@ -445,19 +337,12 @@ def gerar_excel_final(df_original, calc_data):
     col_pdd_venc_calc = c_idx["PDD Vencido Calc"]
     col_dif_venc = c_idx["Dif Vencido"]
     
-    # Otimização máxima: escrever fórmulas em batches grandes
-    # Preparar todas as strings de fórmulas de uma vez (evita formatação repetida)
-    batch_size = 1000  # Processar em lotes para melhor performance
-    
+    batch_size = 1000
     for batch_start in range(0, total_rows, batch_size):
         batch_end = min(batch_start + batch_size, total_rows)
-        
-        # Preparar fórmulas do batch
         for i in range(batch_start, batch_end):
             r = str(i + 2)
             row = i + 1
-            
-            # Escrever todas as fórmulas da linha sequencialmente (melhor cache)
             write(row, col_dias_aq_venc, f'={L["venc"]}{r}-{L["aq"]}{r}', f_num)
             write(row, col_dias_atraso, f'={L["pos"]}{r}-{L["venc"]}{r}', f_num)
             write(row, col_pdd_nota, f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,2,0)', f_pct)
@@ -471,7 +356,6 @@ def gerar_excel_final(df_original, calc_data):
             write(row, col_pdd_venc_calc, f'={L["val"]}{r}*{CL_pdd_venc_final}{r}', f_money)
             write(row, col_dif_venc, f'=ABS({CL_pdd_venc_calc}{r}-{orig_v_base}{r})', f_money)
 
-    # 4. RESUMO
     ws_res = bk.add_worksheet('Resumo')
     ws_res.hide_gridlines(2)
     cols_res = ["Classificação", "Valor Carteira", "", "PDD Nota (Orig.)", "PDD Nota (Calc.)", "Dif. Nota", "", "PDD Vencido (Orig.)", "PDD Vencido (Calc.)", "Dif. Vencido"]
@@ -514,27 +398,24 @@ def gerar_excel_final(df_original, calc_data):
     output.seek(0)
     return output
 
-# --- 4. FUNÇÃO AUXILIAR PARA HTML ---
+# --- 4. FUNÇÕES AUXILIARES ---
 def make_html_table(df, idx_col_name=None):
     html = '<table class="styled-table"><thead><tr>'
-    
-    # Cabeçalhos
     if idx_col_name: html += f'<th>{idx_col_name}</th>'
-    for c in df.columns:
-        html += f'<th>{c}</th>'
+    for c in df.columns: html += f'<th>{c}</th>'
     html += '</tr></thead><tbody>'
-    
-    # Linhas
     for idx, row in df.iterrows():
         row_cls = "total-row" if str(idx).upper() == "TOTAL" else ""
         html += f'<tr class="{row_cls}">'
         if idx_col_name: html += f'<td><strong>{idx}</strong></td>'
-        for val in row:
-            html += f'<td>{val}</td>'
+        for val in row: html += f'<td>{val}</td>'
         html += '</tr>'
-        
     html += '</tbody></table>'
     return html
+
+def fmt_brl_metric(v):
+    # Formata R$ 1.000,00 para os cards
+    return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # --- 5. FRONTEND ---
 
@@ -545,7 +426,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Container unificado para upload, tempo e download
 upload_container = st.container()
 with upload_container:
     uploaded_file = st.file_uploader("Carregar Base (.xlsx / .csv)", type=['xlsx', 'csv'], label_visibility="collapsed")
@@ -559,27 +439,21 @@ if uploaded_file:
     if st.session_state.current_file_name != uploaded_file.name:
         start_time = time.time()
         
-        # Loading dentro do container do upload
         with upload_container:
             status_text = st.empty()
             progress_bar = st.progress(0)
         
-        # Etapa 1: Leitura e limpeza
-        etapa_start = time.time()
-        with upload_container:
-            status_text.text("Lendo e limpando arquivo...")
+        # Leitura
+        status_text.text("Lendo...")
         df_raw, err = ler_e_limpar(uploaded_file)
-        etapa_leitura = time.time() - etapa_start
+        etapa_leitura = time.time() - start_time
         
         if err:
             st.error(err)
             st.session_state.processed_data = None
         else:
-            # Etapa 2: Identificação de colunas
-            etapa_start = time.time()
-            with upload_container:
-                progress_bar.progress(20, text="Identificando colunas...")
-            
+            # Colunas
+            progress_bar.progress(20, text="Mapeando colunas...")
             def get_col(keys):
                 return next((df_raw.columns.get_loc(c) for c in df_raw.columns if any(k in c.lower().replace('_','') for k in keys)), None)
             
@@ -588,45 +462,36 @@ if uploaded_file:
                 'rat': get_col(['notapdd', 'classificacao']), 'val': get_col(['valorpresente', 'valoratual']),
                 'orn': get_col(['pddnota']), 'orv': get_col(['pddvencido'])
             }
-            etapa_colunas = time.time() - etapa_start
             
             if None in [idx['aq'], idx['venc'], idx['pos'], idx['rat'], idx['val']]:
                 st.error("Colunas obrigatórias não identificadas.")
                 st.session_state.processed_data = None
             else:
-                # Etapa 3: Cálculo
-                etapa_start = time.time()
-                with upload_container:
-                    status_text.text("Calculando cenários...")
-                    progress_bar.progress(40)
+                # Cálculo
+                s_calc = time.time()
+                progress_bar.progress(40, text="Calculando...")
                 df_calc = calcular_dataframe(df_raw, idx)
-                etapa_calculo = time.time() - etapa_start
+                etapa_calculo = time.time() - s_calc
                 
-                # Etapa 4: Geração do Excel
-                etapa_start = time.time()
-                with upload_container:
-                    status_text.text("Gerando arquivo Excel...")
-                    progress_bar.progress(60)
+                # Excel
+                s_excel = time.time()
+                progress_bar.progress(60, text="Gerando Excel...")
                 calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
                 xls_bytes = gerar_excel_final(df_raw, calc_data)
-                etapa_excel = time.time() - etapa_start
+                etapa_excel = time.time() - s_excel
                 
-                # Tempo total
                 tempo_total = time.time() - start_time
                 
                 with upload_container:
                     progress_bar.progress(100, text="Concluído!")
+                    time.sleep(0.5)
                     status_text.empty()
                     progress_bar.empty()
                 
                 st.session_state.processed_data = {
-                    'df_calc': df_calc, 
-                    'xls_bytes': xls_bytes, 
-                    'idx': idx,
-                    'tempo_total': tempo_total,
-                    'etapa_leitura': etapa_leitura,
-                    'etapa_calculo': etapa_calculo,
-                    'etapa_excel': etapa_excel
+                    'df_calc': df_calc, 'xls_bytes': xls_bytes, 'idx': idx,
+                    'tempo_total': tempo_total, 'etapa_leitura': etapa_leitura,
+                    'etapa_calculo': etapa_calculo, 'etapa_excel': etapa_excel
                 }
                 st.session_state.current_file_name = uploaded_file.name
 
@@ -635,32 +500,29 @@ if st.session_state.processed_data:
     df = data['df_calc']
     idx = data['idx']
     
-    # Layout harmonizado: tempo e download na mesma área do upload
+    # Layout de Tempo e Download alinhados
     with upload_container:
-        if 'tempo_total' in data:
-            col_info, col_download = st.columns([3, 1])
-            with col_info:
-                st.markdown(f"""
-                <div style="background-color: #f0f7ff; border: 1px solid #b3d9ff; border-left: 4px solid #0030B9; 
-                            border-radius: 6px; padding: 12px 16px; margin-bottom: 0;">
-                    <p style="margin: 0; color: #262730; font-size: 14px;">
-                        ⏱️ <strong>Tempo:</strong> {data['tempo_total']:.2f}s | 
-                        Leitura: {data['etapa_leitura']:.2f}s | 
-                        Cálculo: {data['etapa_calculo']:.2f}s | 
-                        Excel: {data['etapa_excel']:.2f}s
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_download:
-                st.markdown('<div style="margin-top: 8px;"></div>', unsafe_allow_html=True)
-                st.download_button(
-                    label="📥 Baixar Excel",
-                    data=data['xls_bytes'],
-                    file_name="PDD_FIDC.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            st.markdown(f"""
+            <div style="background-color: #f0f7ff; border: 1px solid #b3d9ff; border-left: 4px solid #0030B9; 
+                        border-radius: 6px; padding: 12px 16px; height: 50px; display: flex; align-items: center;">
+                <p style="margin: 0; color: #262730; font-size: 14px;">
+                    ⏱️ <strong>Tempo:</strong> {data['tempo_total']:.2f}s &nbsp;|&nbsp; 
+                    L: {data['etapa_leitura']:.2f}s &nbsp; C: {data['etapa_calculo']:.2f}s &nbsp; E: {data['etapa_excel']:.2f}s
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        with c2:
+            st.download_button(
+                label="📥 Baixar Excel",
+                data=data['xls_bytes'],
+                file_name="PDD_FIDC.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
 
+    st.markdown('<div class="spacer-sm"></div>', unsafe_allow_html=True)
     st.divider()
     
     tot_val = df.iloc[:, idx['val']].sum()
@@ -669,21 +531,27 @@ if st.session_state.processed_data:
     tot_cn = df['CALC_N'].sum()
     tot_cv = df['CALC_V'].sum()
     
+    # Métricas
     colA, colB = st.columns(2)
     with colA:
         st.info("📋 **PDD Nota** (Risco Sacado)")
-        m0, m1, m2, m3 = st.columns(4) # <-- AQUI: 4 Colunas para incluir VP
-        m0.metric("V. Presente", f"R$ {tot_val:,.2f}")
-        m1.metric("Original", f"R$ {tot_orn:,.2f}")
-        m2.metric("Calculado", f"R$ {tot_cn:,.2f}")
-        m3.metric("Diferença", f"R$ {tot_orn - tot_cn:,.2f}", delta=f"{tot_orn - tot_cn:,.2f}", delta_color="normal")
+        m0, m1, m2, m3 = st.columns(4)
+        m0.metric("V. Presente", fmt_brl_metric(tot_val))
+        m1.metric("Original", fmt_brl_metric(tot_orn))
+        m2.metric("Calculado", fmt_brl_metric(tot_cn))
+        dif = tot_orn - tot_cn
+        m3.metric("Diferença", fmt_brl_metric(dif), delta=fmt_brl_metric(dif), delta_color="normal")
         
     with colB:
         st.info("⏰ **PDD Vencido** (Atraso)")
         m1, m2, m3 = st.columns(3)
-        m1.metric("Original", f"R$ {tot_orv:,.2f}")
-        m2.metric("Calculado", f"R$ {tot_cv:,.2f}")
-        m3.metric("Diferença", f"R$ {tot_orv - tot_cv:,.2f}", delta=f"{tot_orv - tot_cv:,.2f}", delta_color="normal")
+        m1.metric("Original", fmt_brl_metric(tot_orv))
+        m2.metric("Calculado", fmt_brl_metric(tot_cv))
+        dif_v = tot_orv - tot_cv
+        m3.metric("Diferença", fmt_brl_metric(dif_v), delta=fmt_brl_metric(dif_v), delta_color="normal")
+
+    # Espaçamento solicitado
+    st.markdown('<div class="spacer-md"></div>', unsafe_allow_html=True)
 
     st.info("**Detalhamento** (Por rating)")
     
@@ -699,53 +567,52 @@ if st.session_state.processed_data:
     order = {k:v for v,k in enumerate(REGRAS['Rating'])}
     df_grp['sort'] = df_grp.index.map(order).fillna(99)
     df_grp = df_grp.sort_values('sort').drop('sort', axis=1)
+    df_grp.loc['TOTAL'] = df_grp.sum()
     
-    total_line = df_grp.sum()
-    df_grp.loc['TOTAL'] = total_line
-    
-    # Otimização: usar apply ao invés de applymap (deprecated) e formatar de forma mais eficiente
+    # Formatação BR para Tabela
     def fmt(x): 
         if pd.isna(x): return "R$ 0,00"
         return f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        
     df_show = df_grp.apply(lambda col: col.map(fmt))
     df_show.columns = ["Valor Presente", "PDD Nota (Orig)", "PDD Nota (Calc)", "PDD Venc (Orig)", "PDD Venc (Calc)"]
     
-    # --- RENDERIZAÇÃO HTML CUSTOMIZADA (NOVO) ---
     st.markdown(make_html_table(df_show, idx_col_name="Rating"), unsafe_allow_html=True)
     
-    with st.expander("📚 Ver Regras de Cálculo", expanded=False):
-        rc1, rc2 = st.columns(2)
-        
-        with rc1:
-            # Tabela de regras em HTML
-            regras_fmt = REGRAS.copy()
-            regras_fmt['% Nota'] = regras_fmt['% Nota'].apply(lambda x: f"{x:.2%}")
-            regras_fmt['% Venc'] = regras_fmt['% Venc'].apply(lambda x: f"{x:.2%}")
-            st.markdown(make_html_table(regras_fmt.set_index('Rating'), idx_col_name="Rating"), unsafe_allow_html=True)
-            
-        with rc2:
-            # Card Explicativo (NOVO CLEAN VISUAL)
-            st.markdown("""
-            <div class="clean-card">
-                <h4>🧠 Lógica de Cálculo</h4>
-                
-                <div style="margin-bottom:20px">
+    # Regras e Explicação (Fundo Cinza e Sem Expander)
+    st.markdown("""
+    <div class="rules-container">
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:300px;">
+                <div class="rules-header">📚 Regras de Cálculo</div>
+    """, unsafe_allow_html=True)
+    
+    regras_fmt = REGRAS.copy()
+    regras_fmt['% Nota'] = regras_fmt['% Nota'].apply(lambda x: f"{x:.2%}")
+    regras_fmt['% Venc'] = regras_fmt['% Venc'].apply(lambda x: f"{x:.2%}")
+    st.markdown(make_html_table(regras_fmt.set_index('Rating'), idx_col_name="Rating"), unsafe_allow_html=True)
+
+    st.markdown("""
+            </div>
+            <div style="flex:1; min-width:300px;">
+                <div class="rules-header">🧠 Lógica de Aplicação</div>
+                <div class="logic-box">
                     <strong style="color:#0030B9">1. PDD Nota (Risco Sacado)</strong>
                     <p style="font-size:0.9em; margin:5px 0">Cálculo <i>Pro Rata Temporis</i> linear.</p>
-                    <div class="code-box">
+                    <span class="formula-box">
                         (Data Posição - Aquisição) ÷ (Vencimento - Aquisição)
-                    </div>
-                </div>
-                
-                <div>
+                    </span>
+                    <br>
                     <strong style="color:#0030B9">2. PDD Vencido (Atraso)</strong>
-                    <ul style="font-size:0.9em; padding-left:20px; color:#444; margin-top:5px">
+                    <ul style="font-size:0.9em; padding-left:20px; color:#444; margin-top:5px; line-height:1.6;">
                         <li><b>≤ 20 dias:</b> 0%</li>
                         <li><b>21 a 59 dias:</b> Escalonamento linear<br>
-                            <span style="font-size:0.85em; color:#666">(Dias Atraso - 20) ÷ 40</span>
+                            <span style="font-size:0.85em; color:#666; background:#f4f4f4; padding:2px 6px; border-radius:4px;">(Dias Atraso - 20) ÷ 40</span>
                         </li>
                         <li><b>≥ 60 dias:</b> 100% de provisionamento</li>
                     </ul>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
