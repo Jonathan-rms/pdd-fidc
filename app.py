@@ -24,20 +24,14 @@ st.markdown("""
     /* ============================================================ */
     /* CORREÇÃO URGENTE DE CONTRASTE (UPLOADER)                     */
     /* ============================================================ */
-    
-    /* 1. Forçar o Container e a Section (Dropzone) a serem brancos/claros */
     div[data-testid="stFileUploader"] {
         background-color: #ffffff !important;
     }
-    
-    /* Esta é a barra que estava ficando preta/escura */
     section[data-testid="stFileUploaderDropzone"] {
         background-color: #f8f9fa !important;
         border: 2px dashed #d0d0d0 !important;
         color: #000000 !important;
     }
-    
-    /* 2. Forçar TODOS os textos dentro do uploader a serem pretos */
     div[data-testid="stFileUploader"] p,
     div[data-testid="stFileUploader"] span,
     div[data-testid="stFileUploader"] small,
@@ -47,32 +41,24 @@ st.markdown("""
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
     }
-
-    /* 3. Arquivo Carregado (Item da lista) - Fundo branco e borda */
     div[data-testid="stFileUploader"] div[role="listitem"] {
         background-color: #ffffff !important;
         border: 1px solid #e0e0e0 !important;
     }
-    
-    /* 4. Botão Browse - Fundo cinza claro e texto preto */
     div[data-testid="stFileUploader"] button[kind="secondary"] {
         background-color: #e9ecef !important;
         color: #000000 !important;
         border: 1px solid #ced4da !important;
         box-shadow: none !important;
     }
-    
-    /* 5. Ícones (SVG) pretos */
     div[data-testid="stFileUploader"] svg {
         fill: #000000 !important;
         color: #000000 !important;
     }
 
     /* ============================================================ */
-    /* OUTROS ESTILOS                                               */
+    /* ESTILOS DE MÉTRICAS (FONTE MAIS FINA)                        */
     /* ============================================================ */
-
-    /* Estilos para métrica customizada (HTML) */
     .custom-metric-box {
         background-color: transparent;
         padding: 0px;
@@ -81,13 +67,24 @@ st.markdown("""
         font-size: 14px; font-weight: 500; color: #262730; margin-bottom: 4px;
     }
     .custom-metric-value {
-        font-size: 24px; font-weight: 600; color: #0030B9; /* Cor padrão */
+        font-size: 24px; 
+        font-weight: 600; /* Padrão (Negrito) para V. Presente */
+        color: #0030B9; 
     }
+    
+    /* Classe para Azul Escuro (V. Presente) */
     .value-dark-blue {
-        color: #001074 !important; /* Cor solicitada para V. Presente */
+        color: #001074 !important; 
+    }
+    
+    /* NOVA CLASSE: Fonte mais fina (Regular - 400) */
+    .value-regular {
+        font-weight: 400 !important;
     }
 
-    /* Botões Gerais */
+    /* ============================================================ */
+    /* OUTROS ESTILOS GERAIS                                        */
+    /* ============================================================ */
     div.stButton > button,
     button[data-testid="baseButton-secondary"]:not([kind="secondary"]),
     button[data-testid="baseButton-primary"] {
@@ -97,8 +94,6 @@ st.markdown("""
         border-radius: 8px !important;
         font-weight: 600 !important;
     }
-
-    /* Botão Download */
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
         color: #f0f0f0 !important;
@@ -108,14 +103,10 @@ st.markdown("""
     div[data-testid="stDownloadButton"] > button:hover {
         color: #ffffff !important;
     }
-
-    /* Info Boxes */
     [data-testid="stInfo"] {
         background: #f0f7ff; border: 1px solid #b3d9ff;
         border-left: 4px solid #0030B9; border-radius: 6px;
     }
-    
-    /* Tabelas */
     .styled-table {
         width: 100%; border-collapse: separate; border-spacing: 0;
         border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;
@@ -130,8 +121,6 @@ st.markdown("""
     .styled-table tr.total-row td {
         font-weight: 700; background-color: #f4f8ff; border-top: 2px solid #0030B9; color: #0030B9;
     }
-    
-    /* Card Lógica */
     .logic-box { background: white; padding: 10px 0; border: none; }
     .formula-box {
         background: #f8f9fa; padding: 8px 12px; border-radius: 6px;
@@ -140,10 +129,9 @@ st.markdown("""
     }
     .section-title { color: #0030B9; font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; }
     
-    /* Espaçadores */
     .spacer-sm { height: 10px; }
     .spacer-md { height: 30px; }
-    .spacer-lg { height: 80px; } /* NOVO ESPAÇAMENTO MAIOR */
+    .spacer-lg { height: 80px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -412,7 +400,6 @@ def make_html_table(df, idx_col_name=None):
 def fmt_brl_metric(v):
     return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# Função para criar card de métrica HTML (Removemos o Delta daqui)
 def make_metric_card(label, value, color_class=""):
     return f"""
     <div class="custom-metric-box">
@@ -521,8 +508,7 @@ if st.session_state.processed_data:
                 use_container_width=True
             )
 
-    st.markdown('<div class="spacer-sm"></div>', unsafe_allow_html=True)
-    st.divider()
+    st.markdown('<div class="spacer-lg"></div>', unsafe_allow_html=True)
     
     tot_val = df.iloc[:, idx['val']].sum()
     tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
@@ -533,23 +519,22 @@ if st.session_state.processed_data:
     colA, colB = st.columns(2)
     with colA:
         st.info("📋 **PDD Nota** (Risco Sacado)")
-        # USANDO HTML CUSTOMIZADO
+        # USANDO HTML CUSTOMIZADO PARA OS CARDS E A FONTE FINA NOS OUTROS
         m0, m1, m2, m3 = st.columns(4)
         
         dif = tot_orn - tot_cn
         m0.markdown(make_metric_card("V. Presente", fmt_brl_metric(tot_val), "value-dark-blue"), unsafe_allow_html=True)
-        m1.markdown(make_metric_card("Original", fmt_brl_metric(tot_orn)), unsafe_allow_html=True)
-        m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cn)), unsafe_allow_html=True)
-        # Delta removido, apenas o valor da diferença
-        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif)), unsafe_allow_html=True)
+        m1.markdown(make_metric_card("Original", fmt_brl_metric(tot_orn), "value-regular"), unsafe_allow_html=True)
+        m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cn), "value-regular"), unsafe_allow_html=True)
+        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif), "value-regular"), unsafe_allow_html=True)
         
     with colB:
         st.info("⏰ **PDD Vencido** (Atraso)")
         m1, m2, m3 = st.columns(3)
         dif_v = tot_orv - tot_cv
-        m1.markdown(make_metric_card("Original", fmt_brl_metric(tot_orv)), unsafe_allow_html=True)
-        m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cv)), unsafe_allow_html=True)
-        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif_v)), unsafe_allow_html=True)
+        m1.markdown(make_metric_card("Original", fmt_brl_metric(tot_orv), "value-regular"), unsafe_allow_html=True)
+        m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cv), "value-regular"), unsafe_allow_html=True)
+        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif_v), "value-regular"), unsafe_allow_html=True)
 
     st.markdown('<div class="spacer-lg"></div>', unsafe_allow_html=True)
 
@@ -580,34 +565,33 @@ if st.session_state.processed_data:
     
     st.markdown('<div class="spacer-lg"></div>', unsafe_allow_html=True)
 
-    st.info("📚 Regras e Lógica de Cálculo")
-    
-    col_regras, col_logica = st.columns(2)
-    
-    with col_regras:
-        st.markdown("**Tabela de Parâmetros**")
-        regras_fmt = REGRAS.copy()
-        regras_fmt['% Nota'] = regras_fmt['% Nota'].apply(lambda x: f"{x:.2%}")
-        regras_fmt['% Venc'] = regras_fmt['% Venc'].apply(lambda x: f"{x:.2%}")
-        st.markdown(make_html_table(regras_fmt.set_index('Rating'), idx_col_name="Rating"), unsafe_allow_html=True)
+    with st.info("📚 **Regras e Lógica de Cálculo**"):
+        col_regras, col_logica = st.columns(2)
         
-    with col_logica:
-        st.markdown("**Lógica de Aplicação**")
-        st.markdown("""
-        <div class="logic-box">
-            <strong style="color:#0030B9">1. PDD Nota (Risco Sacado)</strong>
-            <p style="font-size:0.9em; margin:5px 0">Cálculo <i>Pro Rata Temporis</i> linear.</p>
-            <span class="formula-box">
-                (Data Posição - Aquisição) ÷ (Vencimento - Aquisição)
-            </span>
-            <br>
-            <strong style="color:#0030B9">2. PDD Vencido (Atraso)</strong>
-            <ul style="font-size:0.9em; padding-left:20px; color:#444; margin-top:5px; line-height:1.6;">
-                <li><b>≤ 20 dias:</b> 0%</li>
-                <li><b>21 a 59 dias:</b> Escalonamento linear<br>
-                    <span style="font-size:0.85em; color:#666; background:#f4f4f4; padding:2px 6px; border-radius:4px;">(Dias Atraso - 20) ÷ 40</span>
-                </li>
-                <li><b>≥ 60 dias:</b> 100% de provisionamento</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        with col_regras:
+            st.markdown("**Tabela de Parâmetros**")
+            regras_fmt = REGRAS.copy()
+            regras_fmt['% Nota'] = regras_fmt['% Nota'].apply(lambda x: f"{x:.2%}")
+            regras_fmt['% Venc'] = regras_fmt['% Venc'].apply(lambda x: f"{x:.2%}")
+            st.markdown(make_html_table(regras_fmt.set_index('Rating'), idx_col_name="Rating"), unsafe_allow_html=True)
+            
+        with col_logica:
+            st.markdown("**Lógica de Aplicação**")
+            st.markdown("""
+            <div class="logic-box">
+                <strong style="color:#0030B9">1. PDD Nota (Risco Sacado)</strong>
+                <p style="font-size:0.9em; margin:5px 0">Cálculo <i>Pro Rata Temporis</i> linear.</p>
+                <span class="formula-box">
+                    (Data Posição - Aquisição) ÷ (Vencimento - Aquisição)
+                </span>
+                <br>
+                <strong style="color:#0030B9">2. PDD Vencido (Atraso)</strong>
+                <ul style="font-size:0.9em; padding-left:20px; color:#444; margin-top:5px; line-height:1.6;">
+                    <li><b>≤ 20 dias:</b> 0%</li>
+                    <li><b>21 a 59 dias:</b> Escalonamento linear<br>
+                        <span style="font-size:0.85em; color:#666; background:#f4f4f4; padding:2px 6px; border-radius:4px;">(Dias Atraso - 20) ÷ 40</span>
+                    </li>
+                    <li><b>≥ 60 dias:</b> 100% de provisionamento</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
