@@ -22,65 +22,64 @@ st.markdown("""
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
     /* ============================================================ */
-    /* CORREÇÃO VISUAL DO UPLOADER (SEM TOCAR NOS ÍCONES)           */
+    /* CORREÇÃO DEFINITIVA E ABSOLUTA DO UPLOADER                   */
     /* ============================================================ */
     
-    /* 1. Container Principal */
+    /* 1. O Container Principal */
     div[data-testid="stFileUploader"] {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
         padding: 16px;
-        background-color: #ffffff;
+        background-color: #ffffff !important;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
     }
 
-    /* 2. REGRA DE COR DO TEXTO E FUNDO (Apenas Texto e Background) */
-    /* Garante fundo branco e texto escuro, mas NÃO afeta ícones (svg) */
+    /* 2. A REGRA "NUCLEAR" (Igual ao seu código antigo) */
+    /* Força TUDO dentro do uploader a ter fundo branco e texto escuro inicialmente */
+    /* Isso mata a barra preta instantaneamente */
     div[data-testid="stFileUploader"] div,
     div[data-testid="stFileUploader"] span,
-    div[data-testid="stFileUploader"] p,
     div[data-testid="stFileUploader"] small,
-    div[data-testid="stFileUploader"] label {
-        color: #262730 !important;
-        background-color: transparent !important; /* Deixa transparente para pegar o branco do container */
-    }
-    
-    /* Força o container geral do uploader a ser branco */
-    div[data-testid="stFileUploader"] {
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] svg,
+    section[data-testid="stFileUploader"] * {
         background-color: #ffffff !important;
+        color: #262730 !important;
+        fill: #262730 !important; /* Para ícones SVG */
     }
 
-    /* 3. Área de Drop (Borda tracejada) */
+    /* 3. Área de Drop (Recuperando a borda e estilo) */
     section[data-testid="stFileUploader"] > div {
-        background-color: #f8f9fa !important; /* Fundo levemente cinza na área de drop */
         border: 2px dashed #d0d0d0 !important;
         border-radius: 6px;
+        background-color: #fcfcfc !important; /* Um branco levemente diferente para contraste sutil */
     }
 
-    /* 4. Botão 'Browse files' */
+    /* 4. Botão 'Browse files' (Recuperando o visual de botão) */
+    /* Sobrescreve a regra nuclear apenas para o botão */
     div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #e9ecef !important;
-        border: 1px solid #ced4da !important;
+        background-color: #e9ecef !important; /* Fundo cinza claro */
         color: #262730 !important;
+        border: 1px solid #ced4da !important;
         font-weight: 600 !important;
     }
 
-    /* 5. Item do Arquivo Carregado */
+    /* 5. Item do Arquivo Carregado (A 'pílula' com o nome) */
     div[data-testid="stFileUploader"] div[role="listitem"] {
-        background-color: #ffffff !important;
         border: 1px solid #e0e0e0 !important;
+        border-radius: 6px !important;
+        margin-top: 10px;
     }
     
-    /* Nome do arquivo carregado (Negrito) */
+    /* Reforço para o nome do arquivo ficar em negrito */
     div[data-testid="stFileUploader"] .uploadedFileName {
         font-weight: 700 !important;
-        color: #262730 !important;
     }
 
     /* ============================================================ */
     /* FIM DA CORREÇÃO                                              */
     /* ============================================================ */
 
-    /* --- BOTÕES GERAIS --- */
+    /* --- BOTÕES GERAIS (Download, Calcular - Fora do Uploader) --- */
     div.stButton > button,
     button[data-testid="baseButton-secondary"],
     button[data-testid="baseButton-primary"] {
@@ -92,13 +91,14 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
     }
     
-    /* Exceção: Botão DENTRO do Uploader não deve ser azul */
+    /* IMPORTANTE: O botão dentro do uploader NÃO pode ser azul */
     div[data-testid="stFileUploader"] button[kind="secondary"] {
+        background-color: #e9ecef !important;
         color: #262730 !important;
         box-shadow: none !important;
     }
 
-    /* --- BOTÃO DOWNLOAD --- */
+    /* --- BOTÃO DOWNLOAD (Área de Resultados) --- */
     div[data-testid="stDownloadButton"] { margin-top: 2px; }
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
