@@ -21,53 +21,46 @@ st.markdown("""
     :root { --bg: #ffffff; --text: #262730; }
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
-    /* --- File Uploader (CORREÇÃO DEFINITIVA) --- */
+    /* --- CSS NUCLEAR PARA O UPLOADER (CORREÇÃO DEFINITIVA) --- */
     
-    /* Container principal do Uploader */
+    /* 1. Container Principal */
     div[data-testid="stFileUploader"] {
         background-color: #ffffff !important;
         border: 1px solid #e0e0e0; 
         border-radius: 8px; 
         padding: 16px;
     }
-    
-    /* Botão 'Browse files' */
-    div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background: #e9ecef !important; 
+
+    /* 2. REGRA MESTRA: Força PRETO em ABSOLUTAMENTE TUDO dentro do uploader */
+    /* Isso cobre: texto, ícones, SVGs, spans, divs, parágrafos */
+    div[data-testid="stFileUploader"] * {
         color: #000000 !important;
-        border: 1px solid #ced4da;
-        font-weight: 600 !important;
-    }
-    
-    /* Texto "Drag and drop" e "Limit 200MB" */
-    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p, 
-    div[data-testid="stFileUploader"] small {
-        color: #333333 !important;
+        fill: #000000 !important;               /* Para ícones SVG */
+        -webkit-text-fill-color: #000000 !important; /* Para navegadores Webkit/Chrome */
         font-weight: 500 !important;
     }
-
-    /* --- NOME DO ARQUIVO CARREGADO (AQUI É A CORREÇÃO NUCLEAR) --- */
     
-    /* 1. Estiliza a caixa onde o arquivo fica (fundo cinza claro) */
+    /* 3. Exceção para o fundo do item da lista (Arquivo carregado) */
+    /* Precisamos garantir que o fundo seja claro para o texto preto aparecer */
     div[data-testid="stFileUploader"] div[role="listitem"] {
-        background-color: #f0f2f6 !important;
-        border: 1px solid #d6d6d6 !important;
-        border-radius: 6px !important;
-    }
-    
-    /* 2. FORÇA a cor PRETA em TODOS (*) os elementos dentro dessa caixa */
-    /* Isso pega o nome do arquivo, o tamanho, ícones, tudo. */
-    div[data-testid="stFileUploader"] div[role="listitem"] * {
-        color: #000000 !important; 
-        font-weight: 600 !important;
-    }
-    
-    /* 3. Garante que o ícone de 'X' (remover) também seja preto */
-    div[data-testid="stFileUploader"] div[role="listitem"] button {
-        color: #000000 !important;
+        background-color: #f2f4f7 !important; /* Cinza claro */
+        border: 1px solid #d0d0d0 !important;
     }
 
-    /* --- FIM File Uploader --- */
+    /* 4. Reforço específico para o nome do arquivo (caso ele tente sobrescrever) */
+    div[data-testid="stFileUploader"] .uploadedFileName {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    /* 5. Ajuste do Botão 'Browse files' para não ficar estranho com a regra mestra */
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        background-color: #e9ecef !important;
+        border: 1px solid #ced4da !important;
+        /* A cor do texto já será preta devido à regra mestra */
+    }
+
+    /* --- FIM DO CSS NUCLEAR --- */
 
     /* --- BOTÕES GERAIS --- */
     div.stButton > button,
@@ -75,7 +68,9 @@ st.markdown("""
     button[data-testid="baseButton-primary"] {
         background-color: #0030B9 !important;
         border: none !important;
-        color: white !important;
+        color: white !important; /* Aqui precisamos forçar branco de volta pois está fora do uploader */
+        -webkit-text-fill-color: white !important;
+        fill: white !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
@@ -85,12 +80,14 @@ st.markdown("""
     div[data-testid="stDownloadButton"] { margin-top: 2px; }
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
-        color: #f0f0f0 !important; /* Cinza claro */
+        color: #f0f0f0 !important;
+        -webkit-text-fill-color: #f0f0f0 !important;
         width: 100%;
         height: 50px !important;
     }
     div[data-testid="stDownloadButton"] > button:hover {
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
     }
 
     /* --- INFO BOXES --- */
