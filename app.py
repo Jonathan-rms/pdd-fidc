@@ -22,81 +22,66 @@ st.markdown("""
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
     /* ============================================================ */
-    /* CORREÇÃO DEFINITIVA E ABSOLUTA DO UPLOADER                   */
+    /* UPLOADER - VERSÃO ESTÁVEL                                    */
     /* ============================================================ */
-    
-    /* 1. O Container Principal */
     div[data-testid="stFileUploader"] {
         padding: 16px;
         background-color: #ffffff !important;
-        border-radius: 8px;
         border: 1px solid #e0e0e0;
-    }
-
-    /* 2. A REGRA "NUCLEAR" (Igual ao seu código antigo) */
-    div[data-testid="stFileUploader"] div,
-    div[data-testid="stFileUploader"] span,
-    div[data-testid="stFileUploader"] small,
-    div[data-testid="stFileUploader"] p,
-    div[data-testid="stFileUploader"] svg,
-    section[data-testid="stFileUploader"] * {
-        background-color: #ffffff !important;
-        color: #262730 !important;
-        fill: #262730 !important; /* Para ícones SVG */
-    }
-
-    /* 3. Área de Drop (Recuperando a borda e estilo) */
-    section[data-testid="stFileUploader"] > div {
-        border: 2px dashed #d0d0d0 !important;
-        border-radius: 6px;
-        background-color: #fcfcfc !important; 
-    }
-
-    /* 4. Botão 'Browse files' (Recuperando o visual de botão) */
-    div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #e9ecef !important; /* Fundo cinza claro */
-        color: #262730 !important;
-        border: 1px solid #ced4da !important;
-        font-weight: 600 !important;
-    }
-
-    /* 5. Item do Arquivo Carregado */
-    div[data-testid="stFileUploader"] div[role="listitem"] {
-        border: 1px solid #e0e0e0 !important;
-        border-radius: 6px !important;
-        margin-top: 10px;
+        border-radius: 8px;
     }
     
-    /* Reforço para o nome do arquivo ficar em negrito */
+    /* Força texto escuro apenas nos elementos de texto, preservando ícones */
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] span,
+    div[data-testid="stFileUploader"] small,
+    div[data-testid="stFileUploader"] label {
+        color: #262730 !important;
+    }
+
+    /* Área de Drop */
+    section[data-testid="stFileUploader"] > div {
+        background-color: #f8f9fa !important;
+        border: 2px dashed #d0d0d0 !important;
+    }
+
+    /* Botão Browse */
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        background-color: #e9ecef !important;
+        color: #262730 !important;
+        border: 1px solid #ced4da !important;
+        box-shadow: none !important;
+    }
+
+    /* Item do Arquivo Carregado */
+    div[data-testid="stFileUploader"] div[role="listitem"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e0e0e0 !important;
+        color: #262730 !important;
+    }
+    
+    /* Nome do arquivo carregado */
     div[data-testid="stFileUploader"] .uploadedFileName {
         font-weight: 700 !important;
+        color: #262730 !important;
     }
 
     /* ============================================================ */
-    /* FIM DA CORREÇÃO                                              */
+    /* OUTROS ESTILOS                                               */
     /* ============================================================ */
 
-    /* --- BOTÕES GERAIS --- */
+    /* Botões Gerais */
     div.stButton > button,
-    button[data-testid="baseButton-secondary"],
+    button[data-testid="baseButton-secondary"]:not([kind="secondary"]),
     button[data-testid="baseButton-primary"] {
         background-color: #0030B9 !important;
         border: none !important;
         color: white !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
-    }
-    
-    /* IMPORTANTE: O botão dentro do uploader NÃO pode ser azul */
-    div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #e9ecef !important;
-        color: #262730 !important;
-        box-shadow: none !important;
     }
 
-    /* --- BOTÃO DOWNLOAD --- */
-    div[data-testid="stDownloadButton"] { margin-top: 2px; }
+    /* Botão Download */
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
         color: #f0f0f0 !important;
@@ -107,42 +92,13 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* --- INFO BOXES (Estilo Azul Claro Unificado) --- */
+    /* Info Boxes */
     [data-testid="stInfo"] {
         background: #f0f7ff; border: 1px solid #b3d9ff;
         border-left: 4px solid #0030B9; border-radius: 6px;
     }
     
-    /* --- METRICS --- */
-    div[data-testid="stMetricValue"] {
-        font-size: 24px !important;
-        color: #0030B9 !important;
-        font-weight: 600 !important;
-    }
-    div[data-testid="stMetricLabel"], 
-    div[data-testid="stMetricLabel"] > div,
-    label[data-testid="stMetricLabel"] {
-        font-size: 14px !important; 
-        font-weight: 600 !important; 
-        color: #333333 !important;
-    }
-
-    /* --- CARD DE MÉTRICA HTML CUSTOMIZADO --- */
-    .custom-metric-box {
-        background-color: transparent;
-        padding: 0px;
-    }
-    .custom-metric-label {
-        font-size: 14px; font-weight: 500; color: #262730; margin-bottom: 4px;
-    }
-    .custom-metric-value {
-        font-size: 24px; font-weight: 600; color: #0030B9; /* Cor padrão */
-    }
-    .value-dark-blue {
-        color: #001074 !important; /* Cor solicitada para V. Presente */
-    }
-
-    /* --- TABELAS HTML --- */
+    /* Tabelas */
     .styled-table {
         width: 100%; border-collapse: separate; border-spacing: 0;
         border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;
@@ -158,12 +114,12 @@ st.markdown("""
         font-weight: 700; background-color: #f4f8ff; border-top: 2px solid #0030B9; color: #0030B9;
     }
     
-    /* --- CARD LÓGICA --- */
+    /* Card Lógica dentro do st.info */
     .logic-box {
         background: white;
-        padding: 15px; /* Adicionei um padding interno para ficar bonito dentro do st.info */
+        padding: 15px;
         border-radius: 8px;
-        border: 1px solid #e0e0e0; /* Borda suave para destacar do fundo azul do info */
+        border: 1px solid #e0e0e0;
     }
     .formula-box {
         background: #f8f9fa; padding: 8px 12px; border-radius: 6px;
@@ -171,11 +127,14 @@ st.markdown("""
         border: 1px solid #e0e0e0; margin-top: 5px; display: block; width: fit-content;
     }
     
-    /* Espaçadores */
-    .spacer-sm { height: 10px; }
-    .spacer-md { height: 30px; }
-    .spacer-lg { height: 80px; } /* AUMENTADO PARA DAR MAIS RESPIRO */
+    /* Métrica Customizada */
+    .custom-metric-box { padding: 0px; }
+    .custom-metric-label { font-size: 14px; font-weight: 500; color: #262730; margin-bottom: 4px; }
+    .custom-metric-value { font-size: 24px; font-weight: 600; color: #0030B9; }
+    .value-dark-blue { color: #001074 !important; }
     
+    /* Espaçador Grande (Respiro) */
+    .spacer-lg { height: 60px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -444,7 +403,6 @@ def make_html_table(df, idx_col_name=None):
 def fmt_brl_metric(v):
     return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# Função HTML Customizada para Métrica
 def make_metric_card(label, value, color_class=""):
     return f"""
     <div class="custom-metric-box">
@@ -553,7 +511,8 @@ if st.session_state.processed_data:
                 use_container_width=True
             )
 
-    st.markdown('<div class="spacer-lg"></div>', unsafe_allow_html=True) # Espaçamento Maior Aqui
+    st.markdown('<div class="spacer-sm"></div>', unsafe_allow_html=True)
+    st.divider()
     
     tot_val = df.iloc[:, idx['val']].sum()
     tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
@@ -609,7 +568,6 @@ if st.session_state.processed_data:
     
     st.markdown('<div class="spacer-lg"></div>', unsafe_allow_html=True)
 
-    # Nova seção com st.info
     with st.info("📚 **Regras e Lógica de Cálculo**"):
         col_regras, col_logica = st.columns(2)
         
