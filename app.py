@@ -21,59 +21,89 @@ st.markdown("""
     :root { --bg: #ffffff; --text: #262730; }
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
-    /* --- CSS NUCLEAR PARA O UPLOADER (CORREÇÃO DEFINITIVA) --- */
+    /* ============================================================ */
+    /* CORREÇÃO DO FILE UPLOADER (Força Bruta para Tema Claro)      */
+    /* ============================================================ */
     
-    /* 1. Container Principal */
+    /* 1. Container e Texto Geral */
     div[data-testid="stFileUploader"] {
-        background-color: #ffffff !important;
-        border: 1px solid #e0e0e0; 
-        border-radius: 8px; 
         padding: 16px;
-    }
-
-    /* 2. REGRA MESTRA: Força PRETO em ABSOLUTAMENTE TUDO dentro do uploader */
-    /* Isso cobre: texto, ícones, SVGs, spans, divs, parágrafos */
-    div[data-testid="stFileUploader"] * {
-        color: #000000 !important;
-        fill: #000000 !important;               /* Para ícones SVG */
-        -webkit-text-fill-color: #000000 !important; /* Para navegadores Webkit/Chrome */
-        font-weight: 500 !important;
+        border-radius: 8px;
     }
     
-    /* 3. Exceção para o fundo do item da lista (Arquivo carregado) */
-    /* Precisamos garantir que o fundo seja claro para o texto preto aparecer */
-    div[data-testid="stFileUploader"] div[role="listitem"] {
-        background-color: #f2f4f7 !important; /* Cinza claro */
-        border: 1px solid #d0d0d0 !important;
+    /* 2. Força FUNDO BRANCO e TEXTO ESCURO em quase tudo dentro do uploader */
+    div[data-testid="stFileUploader"] div,
+    div[data-testid="stFileUploader"] span,
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] small,
+    div[data-testid="stFileUploader"] label {
+        background-color: #ffffff !important;
+        color: #262730 !important;
     }
 
-    /* 4. Reforço específico para o nome do arquivo (caso ele tente sobrescrever) */
+    /* 3. Área de Drop (Drag and Drop) */
+    /* Remove o fundo escuro padrão do Streamlit */
+    section[data-testid="stFileUploader"] {
+        background-color: #ffffff !important;
+    }
+    section[data-testid="stFileUploader"] > div {
+        background-color: #ffffff !important;
+        border: 2px dashed #d0d0d0 !important; /* Borda tracejada visível */
+        border-radius: 8px;
+    }
+
+    /* 4. Botão 'Browse files' */
+    /* Precisa de cor diferente para não sumir no fundo branco */
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        background-color: #e9ecef !important; /* Fundo cinza claro */
+        color: #000000 !important;
+        border: 1px solid #ced4da !important;
+        font-weight: 600 !important;
+    }
+
+    /* 5. Arquivo Carregado (Item da lista) */
+    div[data-testid="stFileUploader"] div[role="listitem"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 6px;
+        margin-top: 10px;
+    }
+    
+    /* Nome do arquivo carregado (Negrito e Preto) */
     div[data-testid="stFileUploader"] .uploadedFileName {
         color: #000000 !important;
         font-weight: 700 !important;
+        background-color: transparent !important;
+    }
+    
+    /* Ícone X (Remover) */
+    div[data-testid="stFileUploader"] div[role="listitem"] button {
+        background-color: transparent !important;
+        color: #000000 !important;
+        border: none !important;
     }
 
-    /* 5. Ajuste do Botão 'Browse files' para não ficar estranho com a regra mestra */
-    div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #e9ecef !important;
-        border: 1px solid #ced4da !important;
-        /* A cor do texto já será preta devido à regra mestra */
-    }
+    /* ============================================================ */
+    /* FIM DA CORREÇÃO DO UPLOADER                                  */
+    /* ============================================================ */
 
-    /* --- FIM DO CSS NUCLEAR --- */
-
-    /* --- BOTÕES GERAIS --- */
+    /* --- BOTÕES GERAIS (Download, Calcular) --- */
     div.stButton > button,
     button[data-testid="baseButton-secondary"],
     button[data-testid="baseButton-primary"] {
         background-color: #0030B9 !important;
         border: none !important;
-        color: white !important; /* Aqui precisamos forçar branco de volta pois está fora do uploader */
-        -webkit-text-fill-color: white !important;
-        fill: white !important;
+        color: white !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
+    }
+    
+    /* Exceção: Botão dentro do Uploader não deve ser azul */
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {
+        background-color: #e9ecef !important;
+        color: #000000 !important;
+        box-shadow: none !important;
     }
 
     /* --- BOTÃO DOWNLOAD --- */
@@ -81,13 +111,11 @@ st.markdown("""
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
         color: #f0f0f0 !important;
-        -webkit-text-fill-color: #f0f0f0 !important;
         width: 100%;
         height: 50px !important;
     }
     div[data-testid="stDownloadButton"] > button:hover {
         color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
     }
 
     /* --- INFO BOXES --- */
