@@ -22,10 +22,10 @@ st.markdown("""
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
     /* ============================================================ */
-    /* CORREÇÃO DEFINITIVA DO UPLOADER (Igual ao seu código antigo) */
+    /* CORREÇÃO VISUAL DO UPLOADER (SEM TOCAR NOS ÍCONES)           */
     /* ============================================================ */
     
-    /* 1. O Container Principal */
+    /* 1. Container Principal */
     div[data-testid="stFileUploader"] {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -33,60 +33,69 @@ st.markdown("""
         background-color: #ffffff;
     }
 
-    /* 2. REGRA MESTRA (A que faz funcionar): Força TUDO a ser branco e texto escuro */
-    /* Isso remove a barra preta teimosa */
-    div[data-testid="stFileUploader"] * {
-        background-color: #ffffff !important;
+    /* 2. REGRA DE COR DO TEXTO E FUNDO (Apenas Texto e Background) */
+    /* Garante fundo branco e texto escuro, mas NÃO afeta ícones (svg) */
+    div[data-testid="stFileUploader"] div,
+    div[data-testid="stFileUploader"] span,
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] small,
+    div[data-testid="stFileUploader"] label {
         color: #262730 !important;
+        background-color: transparent !important; /* Deixa transparente para pegar o branco do container */
+    }
+    
+    /* Força o container geral do uploader a ser branco */
+    div[data-testid="stFileUploader"] {
+        background-color: #ffffff !important;
     }
 
     /* 3. Área de Drop (Borda tracejada) */
     section[data-testid="stFileUploader"] > div {
+        background-color: #f8f9fa !important; /* Fundo levemente cinza na área de drop */
         border: 2px dashed #d0d0d0 !important;
         border-radius: 6px;
     }
 
-    /* 4. Botão 'Browse files' (Para não ficar invisível no fundo branco) */
-    /* Precisamos sobrescrever a regra mestra apenas aqui */
+    /* 4. Botão 'Browse files' */
     div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #e9ecef !important; /* Cinza claro */
+        background-color: #e9ecef !important;
         border: 1px solid #ced4da !important;
         color: #262730 !important;
         font-weight: 600 !important;
     }
 
-    /* 5. Arquivo Carregado (Item da lista) */
-    /* Damos um fundo levemente cinza para destacar o arquivo da lista */
+    /* 5. Item do Arquivo Carregado */
     div[data-testid="stFileUploader"] div[role="listitem"] {
-        background-color: #f8f9fa !important;
+        background-color: #ffffff !important;
         border: 1px solid #e0e0e0 !important;
     }
     
-    /* O ícone X (fechar) precisa ser visível */
-    div[data-testid="stFileUploader"] svg, 
-    div[data-testid="stFileUploader"] svg path {
-        fill: #262730 !important;
+    /* Nome do arquivo carregado (Negrito) */
+    div[data-testid="stFileUploader"] .uploadedFileName {
+        font-weight: 700 !important;
+        color: #262730 !important;
     }
 
     /* ============================================================ */
     /* FIM DA CORREÇÃO                                              */
     /* ============================================================ */
 
-    /* --- BOTÕES GERAIS (Calcular, Download) --- */
+    /* --- BOTÕES GERAIS --- */
     div.stButton > button,
     button[data-testid="baseButton-secondary"],
     button[data-testid="baseButton-primary"] {
         background-color: #0030B9 !important;
         border: none !important;
-        color: white !important; /* Texto branco */
+        color: white !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
     }
     
-    /* IMPORTANTE: Garantir que o botão Browse NÃO pegue o estilo azul */
+    /* Exceção: Botão DENTRO do Uploader não deve ser azul */
     div[data-testid="stFileUploader"] button[kind="secondary"] {
-        color: #262730 !important; /* Volta para cinza escuro */
+        color: #262730 !important;
+        box-shadow: none !important;
     }
 
     /* --- BOTÃO DOWNLOAD --- */
