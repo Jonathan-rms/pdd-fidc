@@ -6,66 +6,97 @@ import time
 import xlsxwriter
 from xlsxwriter.utility import xl_col_to_name
 
-# --- 1. CONFIGURAÇÃO VISUAL & CORREÇÃO DE TEMA ---
+# --- 1. CONFIGURAÇÃO VISUAL & CORREÇÃO DE TEMA (FORÇADA) ---
 st.set_page_config(
     page_title="Validação PDD",
     page_icon="🔷",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# CSS OTIMIZADO: Força tema claro mesmo se o navegador estiver em Dark Mode
+# CSS SUPER FORÇADO PARA MODO CLARO
 st.markdown("""
 <style>
-    /* Forçar fundo branco e textos escuros na raiz do app */
+    /* 1. COMANDO MESTRE: Avisa o navegador que este site é LIGHT */
+    :root {
+        color-scheme: light;
+    }
+
+    /* 2. FORÇAR FUNDO E TEXTO GERAL */
     [data-testid="stAppViewContainer"] {
         background-color: #ffffff !important;
+        color: #000000 !important;
     }
     [data-testid="stHeader"] {
         background-color: rgba(255, 255, 255, 0.0) !important;
     }
     
-    /* Forçar cor de texto global para evitar 'branco no branco' */
-    body, p, div, span, label, td {
+    /* 3. CORRIGIR TEXTOS GERAIS (Evita branco no branco) */
+    p, div, span, label, h1, h2, h3, h4, h5, h6, li {
         color: #0d0d0d !important;
     }
+    
+    /* Títulos específicos em Azul */
+    h1, h2, h3 { color: #0030B9 !important; }
 
-    /* Identidade Visual Específica (Sobrescreve o global acima onde necessário) */
-    h1, h2, h3, h4, h5, h6 { color: #0030B9 !important; }
-    
-    /* Barra de Progresso */
-    .stProgress > div > div > div > div { background-color: #0030B9; }
-    
-    /* Métricas */
-    div[data-testid="stMetricValue"] { font-size: 24px; color: #001074 !important; }
-    div[data-testid="stMetricLabel"] { font-size: 14px; font-weight: bold; color: #0d0d0d !important; }
-    
-    /* Botões */
-    div.stButton > button {
-        background-color: #0030B9;
-        color: white !important; /* Força branco no botão */
-        border-radius: 6px;
-        border: none;
-        height: 3rem;
-        font-weight: 600;
+    /* 4. EXPANDER (A caixa de regras que ficou preta) */
+    .streamlit-expanderHeader {
+        background-color: #f8f9fa !important;
+        color: #000000 !important;
+        border: 1px solid #ddd !important;
     }
-    div.stButton > button:hover { background-color: #001074; color: white !important; }
+    [data-testid="stExpanderDetails"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #ddd !important;
+        border-top: none !important;
+    }
 
-    /* Tabela */
-    div[data-testid="stDataFrame"] {
-        background-color: #f0f2f6 !important;
-        padding: 10px;
+    /* 5. DATAFRAME / TABELA (Forçar fundo claro) */
+    [data-testid="stDataFrame"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e0e0e0;
+    }
+    /* Tenta forçar cores internas da tabela caso seja HTML */
+    [data-testid="stDataFrame"] div {
+        color: #000000 !important;
+    }
+
+    /* 6. INPUTS E UPLOAD (Caixas de texto e upload) */
+    [data-testid="stFileUploader"] {
+        background-color: #f8f9fa !important;
         border-radius: 10px;
+        padding: 10px;
     }
-    th {
-        font-size: 16px !important;
-        background-color: #e8f0fe !important;
-        color: #0030B9 !important;
+    [data-testid="stFileUploader"] section {
+        background-color: #ffffff !important;
     }
-    
-    /* Inputs (Upload, Selectbox, etc) para não ficarem esquisitos no Dark Mode */
-    .stFileUploader, div[data-baseweb="select"] > div {
-        background-color: #ffffff;
-        color: black;
+    [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] small {
+        color: #333333 !important;
+    }
+
+    /* 7. BARRA DE PROGRESSO */
+    .stProgress > div > div > div > div { 
+        background-color: #0030B9 !important; 
+    }
+    /* Fundo da barra de progresso */
+    .stProgress > div > div {
+        background-color: #e0e0e0 !important;
+    }
+
+    /* 8. MÉTRICAS */
+    div[data-testid="stMetricValue"] { font-size: 24px; color: #001074 !important; }
+    div[data-testid="stMetricLabel"] { font-size: 14px; font-weight: bold; color: #333333 !important; }
+
+    /* 9. BOTÕES */
+    div.stButton > button {
+        background-color: #0030B9 !important;
+        color: white !important;
+        border: none;
+    }
+    div.stButton > button:hover {
+        background-color: #001074 !important;
+        color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -89,27 +120,22 @@ def ler_e_limpar(file):
                 df = pd.read_csv(file, encoding='latin1', sep=';')
         else: df = pd.read_excel(file)
         
-        # --- LIMPEZA DE RODAPÉ/TOTAIS ---
         df = df.dropna(how='all')
         
-        # Filtro de NotaPDD/Rating inválido
         possible_names = ['notapdd', 'classificação', 'classificacao', 'rating']
         col_rating = next((c for c in df.columns if any(x in c.lower() for x in possible_names)), None)
         
         if col_rating:
             df = df.dropna(subset=[col_rating])
-            # Otimização: Conversão para string e lower apenas uma vez
             s_rating = df[col_rating].astype(str).str.strip().str.lower()
             df = df[~s_rating.isin(['nan', 'null', '', 'total', 'soma'])]
 
-        # Filtro de Valor
         col_val_name = next((c for c in df.columns if any(x in c.lower() for x in ['valorpresente', 'valoratual'])), None)
         if col_val_name:
              df = df.dropna(subset=[col_val_name])
 
         cols_txt = ['NotaPDD', 'Classificação', 'Rating']
         
-        # Otimização: Vetorização ao invés de iteração lenta onde possível
         for c in df.columns:
             if df[c].dtype == 'object': 
                 df[c] = df[c].astype(str).str.strip()
@@ -159,7 +185,6 @@ def calcular_dataframe(df, idx):
 
 def gerar_excel_final(df_original, calc_data):
     output = io.BytesIO()
-    # Engine otimizada com constant_memory=False (padrão) para velocidade
     wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
     
@@ -203,7 +228,7 @@ def gerar_excel_final(df_original, calc_data):
         ws_re.set_column(i, i, 15, f_pct if '%' in col else f_text)
     ws_re.hide()
 
-    # 3. FÓRMULAS (OTIMIZAÇÃO CRÍTICA: Geração em lote)
+    # 3. FÓRMULAS
     L = calc_data['L']
     c_idx = {}
     curr = len(df_clean.columns)
@@ -228,7 +253,6 @@ def gerar_excel_final(df_original, calc_data):
         ("Dif Vencido", 15, f_calc, f_money)
     ]
     
-    # Criar cabeçalhos
     for t, w, head_fmt, body_fmt in headers:
         ws.set_column(curr, curr, w, body_fmt)
         ws.write(0, curr, t, head_fmt)
@@ -238,18 +262,12 @@ def gerar_excel_final(df_original, calc_data):
     def CL(name): return xl_col_to_name(c_idx[name])
     
     total_rows = len(df_clean)
-    rows_range = range(2, total_rows + 2) # Linhas do Excel (começando em 2 até N+1)
+    rows_range = range(2, total_rows + 2)
     
-    # --- AQUI ESTÁ A MÁGICA DE VELOCIDADE ---
-    # Geramos todas as strings de fórmula na memória (Rápido) e escrevemos a coluna toda de uma vez (Rápido)
-    # Isso elimina o loop lento de escrita célula a célula.
-    
-    # Colunas Auxiliares (Strings de formulas)
     f_dias_venc = [f'={L["venc"]}{r}-{L["aq"]}{r}' for r in rows_range]
     f_dias_atr  = [f'={L["pos"]}{r}-{L["venc"]}{r}' for r in rows_range]
     f_pct_nota  = [f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,2,0)' for r in rows_range]
     
-    # Pro rata Nota (Cálculo complexo)
     f_pr_nota = []
     col_dias = CL("Qt. Dias Aquisição x Venc.")
     for r in rows_range:
@@ -274,8 +292,6 @@ def gerar_excel_final(df_original, calc_data):
     orig_v_col = L['orv'] if L['orv'] else None
     f_dif_venc = [f'=ABS({CL("PDD Vencido Calc")}{r}-{orig_v_col}{r})' if orig_v_col else f'=ABS({CL("PDD Vencido Calc")}{r})' for r in rows_range]
 
-    # ESCRITA EM LOTE (Batch Writing)
-    # write_column detecta automaticamente que a lista começa com '=' e escreve como fórmula
     ws.write_column(1, c_idx["Qt. Dias Aquisição x Venc."], f_dias_venc, f_num)
     ws.write_column(1, c_idx["Qt. Dias Atraso"], f_dias_atr, f_num)
     ws.write_column(1, c_idx["% PDD Nota"], f_pct_nota, f_pct)
@@ -304,7 +320,6 @@ def gerar_excel_final(df_original, calc_data):
     classes = sorted([str(x) for x in df_clean.iloc[:, idx['rat']].unique() if str(x) != 'nan'])
     r_idx = 1
     
-    # Pequena otimização aqui também para strings
     base_sumif = f"SUMIF('{sh_an}'!${L['rat']}:${L['rat']}"
     
     for cls in classes:
@@ -357,9 +372,15 @@ if 'processed_data' not in st.session_state:
     st.session_state.processed_data = None
 if 'current_file_name' not in st.session_state:
     st.session_state.current_file_name = None
+if 'exec_time' not in st.session_state:
+    st.session_state.exec_time = 0
 
 if uploaded_file:
     if st.session_state.current_file_name != uploaded_file.name:
+        
+        # --- TIMER START ---
+        start_time = time.time()
+        
         status_text = st.empty()
         progress_bar = st.progress(0)
         
@@ -389,13 +410,15 @@ if uploaded_file:
                 progress_bar.progress(40)
                 df_calc = calcular_dataframe(df_raw, idx)
                 
-                status_text.text("Gerando arquivo Excel (Otimizado)...")
-                
-                # A barra de progresso agora é apenas estética, pois o cálculo será muito rápido
+                status_text.text("Otimizando saída Excel...")
                 progress_bar.progress(60)
                 
                 calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
                 xls_bytes = gerar_excel_final(df_raw, calc_data)
+                
+                # --- TIMER END ---
+                end_time = time.time()
+                st.session_state.exec_time = end_time - start_time
                 
                 progress_bar.progress(100, text="Concluído!")
                 time.sleep(0.5)
@@ -410,6 +433,7 @@ if st.session_state.processed_data:
     df = data['df_calc']
     idx = data['idx']
     
+    # Exibir Botão e Tempo
     with c2:
         st.markdown('<div style="height: 2px"></div>', unsafe_allow_html=True)
         st.download_button(
@@ -418,6 +442,9 @@ if st.session_state.processed_data:
             file_name="PDD_FIDC.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+        # MOSTRAR O TEMPO DE PROCESSAMENTO
+        if st.session_state.exec_time > 0:
+            st.info(f"⏱️ Tempo: **{st.session_state.exec_time:.2f}s**")
 
     st.divider()
     
@@ -465,6 +492,7 @@ if st.session_state.processed_data:
     df_show = df_grp.applymap(fmt)
     df_show.columns = ["Valor Presente", "PDD Nota (Orig)", "PDD Nota (Calc)", "PDD Venc (Orig)", "PDD Venc (Calc)"]
     
+    # Renderiza a tabela
     st.dataframe(df_show, use_container_width=True)
     
     with st.expander("📚 Ver Regras de Cálculo"):
