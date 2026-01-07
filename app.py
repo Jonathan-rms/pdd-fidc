@@ -577,7 +577,7 @@ if st.session_state.processed_data:
     
     st.markdown('<div class="spacer-md"></div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">📚 Regras e Lógica de Cálculo</div>', unsafe_allow_html=True)
+    st.info("📚 Regras e Lógica de Cálculo")
     
     col_regras, col_logica = st.columns(2)
     
