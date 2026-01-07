@@ -22,79 +22,74 @@ st.markdown("""
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
     /* ============================================================ */
-    /* CORREÇÃO UPLOADER (Foco em Texto Preto)                      */
+    /* CORREÇÃO URGENTE DE CONTRASTE (UPLOADER)                     */
     /* ============================================================ */
     
+    /* 1. Forçar o Container e a Section (Dropzone) a serem brancos/claros */
     div[data-testid="stFileUploader"] {
-        padding: 16px;
         background-color: #ffffff !important;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
     }
-
-    /* Força texto preto em P, SPAN, SMALL e DIVs dentro do uploader */
+    
+    /* Esta é a barra que estava ficando preta/escura */
+    section[data-testid="stFileUploaderDropzone"] {
+        background-color: #f8f9fa !important;
+        border: 2px dashed #d0d0d0 !important;
+        color: #000000 !important;
+    }
+    
+    /* 2. Forçar TODOS os textos dentro do uploader a serem pretos */
     div[data-testid="stFileUploader"] p,
     div[data-testid="stFileUploader"] span,
     div[data-testid="stFileUploader"] small,
-    div[data-testid="stFileUploader"] div {
-        color: #262730 !important;
+    div[data-testid="stFileUploader"] div,
+    section[data-testid="stFileUploaderDropzone"] span,
+    section[data-testid="stFileUploaderDropzone"] small {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
     }
 
-    /* Área de Drop */
-    section[data-testid="stFileUploader"] > div {
-        background-color: #f8f9fa !important;
-        border: 2px dashed #d0d0d0 !important;
-    }
-
-    /* Item da Lista (Arquivo Carregado) */
+    /* 3. Arquivo Carregado (Item da lista) - Fundo branco e borda */
     div[data-testid="stFileUploader"] div[role="listitem"] {
         background-color: #ffffff !important;
         border: 1px solid #e0e0e0 !important;
     }
     
-    /* Ícone X e SVG */
-    div[data-testid="stFileUploader"] svg {
-        fill: #262730 !important;
-        color: #262730 !important;
-    }
-
-    /* Botão Browse */
+    /* 4. Botão Browse - Fundo cinza claro e texto preto */
     div[data-testid="stFileUploader"] button[kind="secondary"] {
         background-color: #e9ecef !important;
-        color: #262730 !important;
+        color: #000000 !important;
         border: 1px solid #ced4da !important;
         box-shadow: none !important;
     }
+    
+    /* 5. Ícones (SVG) pretos */
+    div[data-testid="stFileUploader"] svg {
+        fill: #000000 !important;
+        color: #000000 !important;
+    }
 
     /* ============================================================ */
-    /* ESTILOS PARA MÉTRICA CUSTOMIZADA (HTML)                      */
+    /* OUTROS ESTILOS                                               */
     /* ============================================================ */
+
+    /* Estilos para métrica customizada (HTML) */
     .custom-metric-box {
         background-color: transparent;
-        border-radius: 5px;
         padding: 0px;
     }
     .custom-metric-label {
-        font-size: 14px;
-        font-weight: 500;
-        color: #262730;
-        margin-bottom: 4px;
+        font-size: 14px; font-weight: 500; color: #262730; margin-bottom: 4px;
     }
     .custom-metric-value {
-        font-size: 24px;
-        font-weight: 600;
-        color: #0030B9; /* Cor padrão */
+        font-size: 24px; font-weight: 600; color: #0030B9; /* Cor padrão */
     }
-    /* Classe específica para a cor azul escuro solicitada */
     .value-dark-blue {
-        color: #001074 !important;
+        color: #001074 !important; /* Cor solicitada para V. Presente */
     }
 
-    /* --- OUTROS ESTILOS GERAIS --- */
-    
-    /* Botões Padrão (Azul) */
+    /* Botões Gerais */
     div.stButton > button,
-    button[data-testid="baseButton-secondary"]:not([kind="secondary"]), /* Exclui o botão do uploader */
+    button[data-testid="baseButton-secondary"]:not([kind="secondary"]),
     button[data-testid="baseButton-primary"] {
         background-color: #0030B9 !important;
         border: none !important;
@@ -122,45 +117,28 @@ st.markdown("""
     
     /* Tabelas */
     .styled-table {
-        width: 100%;
-        border-collapse: separate; 
-        border-spacing: 0;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        overflow: hidden;
-        font-size: 0.9rem;
-        background-color: white;
+        width: 100%; border-collapse: separate; border-spacing: 0;
+        border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;
+        font-size: 0.9rem; background-color: white;
     }
     .styled-table th {
-        background-color: #0030B9;
-        color: white;
-        padding: 12px 15px;
-        text-align: left;
+        background-color: #0030B9; color: white; padding: 12px 15px; text-align: left;
     }
     .styled-table td {
-        padding: 10px 15px;
-        border-bottom: 1px solid #f0f0f0;
-        color: #333;
+        padding: 10px 15px; border-bottom: 1px solid #f0f0f0; color: #333;
     }
     .styled-table tr.total-row td {
-        font-weight: 700;
-        background-color: #f4f8ff;
-        border-top: 2px solid #0030B9;
-        color: #0030B9;
+        font-weight: 700; background-color: #f4f8ff; border-top: 2px solid #0030B9; color: #0030B9;
     }
     
     /* Card Lógica */
-    .logic-box {
-        background: white; padding: 10px 0; border: none;
-    }
+    .logic-box { background: white; padding: 10px 0; border: none; }
     .formula-box {
         background: #f8f9fa; padding: 8px 12px; border-radius: 6px;
         font-family: 'Courier New', monospace; font-size: 0.85em; color: #333;
         border: 1px solid #e0e0e0; margin-top: 5px; display: block; width: fit-content;
     }
-    .section-title {
-        color: #0030B9; font-size: 1.1rem; font-weight: 600; margin-bottom: 15px;
-    }
+    .section-title { color: #0030B9; font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; }
     .spacer-sm { height: 10px; }
     .spacer-md { height: 30px; }
 </style>
@@ -431,7 +409,7 @@ def make_html_table(df, idx_col_name=None):
 def fmt_brl_metric(v):
     return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# Função auxiliar para gerar card de métrica HTML (Corrigido para usar a cor exata)
+# Função para criar card de métrica HTML (Removemos o Delta daqui)
 def make_metric_card(label, value, color_class=""):
     return f"""
     <div class="custom-metric-box">
@@ -552,25 +530,15 @@ if st.session_state.processed_data:
     colA, colB = st.columns(2)
     with colA:
         st.info("📋 **PDD Nota** (Risco Sacado)")
-        # USANDO HTML CUSTOMIZADO PARA GARANTIR A COR #001074
+        # USANDO HTML CUSTOMIZADO
         m0, m1, m2, m3 = st.columns(4)
         
-        # Métrica Customizada com a cor desejada
         dif = tot_orn - tot_cn
         m0.markdown(make_metric_card("V. Presente", fmt_brl_metric(tot_val), "value-dark-blue"), unsafe_allow_html=True)
         m1.markdown(make_metric_card("Original", fmt_brl_metric(tot_orn)), unsafe_allow_html=True)
         m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cn)), unsafe_allow_html=True)
-        
-        # Delta precisa ser manual também para manter consistência, ou usamos st.metric se não houver cor especial
-        # Vou usar HTML aqui para ficar alinhado visualmente
-        delta_color = "green" if dif >= 0 else "red" # Cor simples para delta
-        m3.markdown(f"""
-        <div class="custom-metric-box">
-            <div class="custom-metric-label">Diferença</div>
-            <div class="custom-metric-value">{fmt_brl_metric(dif)}</div>
-            <div style="font-size: 12px; color: #333;">Delta: {fmt_brl_metric(dif)}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Delta removido, apenas o valor da diferença
+        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif)), unsafe_allow_html=True)
         
     with colB:
         st.info("⏰ **PDD Vencido** (Atraso)")
@@ -578,14 +546,7 @@ if st.session_state.processed_data:
         dif_v = tot_orv - tot_cv
         m1.markdown(make_metric_card("Original", fmt_brl_metric(tot_orv)), unsafe_allow_html=True)
         m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cv)), unsafe_allow_html=True)
-        
-        m3.markdown(f"""
-        <div class="custom-metric-box">
-            <div class="custom-metric-label">Diferença</div>
-            <div class="custom-metric-value">{fmt_brl_metric(dif_v)}</div>
-            <div style="font-size: 12px; color: #333;">Delta: {fmt_brl_metric(dif_v)}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif_v)), unsafe_allow_html=True)
 
     st.markdown('<div class="spacer-md"></div>', unsafe_allow_html=True)
 
