@@ -35,42 +35,88 @@ st.markdown("""
         color: #262730 !important;
     }
     
-    /* File Uploader - Forçar cores claras AGressivamente */
-    [data-testid="stFileUploader"], 
-    [data-testid="stFileUploader"] > div,
-    [data-testid="stFileUploader"] > div > div,
-    [data-testid="stFileUploader"] button,
-    [data-testid="stFileUploader"] .uploadedFile,
-    [data-testid="stFileUploader"] .uploadedFile > div {
+    /* File Uploader - SOLUÇÃO DEFINITIVA */
+    /* Forçar TODOS os elementos do uploader para cores claras */
+    div[data-testid="stFileUploader"],
+    div[data-testid="stFileUploader"] *,
+    div[data-testid="stFileUploader"] > *,
+    div[data-testid="stFileUploader"] > * > *,
+    div[data-testid="stFileUploader"] > * > * > * {
         background-color: #ffffff !important;
         background: #ffffff !important;
+        color: #262730 !important;
+    }
+    
+    /* Container principal */
+    div[data-testid="stFileUploader"] {
         border: 1px solid #e0e0e0 !important;
         border-radius: 8px !important;
-        color: #262730 !important;
+        padding: 16px !important;
+        background: #ffffff !important;
     }
-    [data-testid="stFileUploader"] button {
-        background-color: #f8f9fa !important;
-        background: #f8f9fa !important;
-        color: #262730 !important;
-        border: 1px solid #d0d0d0 !important;
+    
+    /* Área de drag and drop */
+    div[data-testid="stFileUploader"] > div {
+        background: #ffffff !important;
+        border: 2px dashed #d0d0d0 !important;
+        border-radius: 6px !important;
+        padding: 20px !important;
     }
-    [data-testid="stFileUploader"] button:hover {
+    
+    /* Botão Browse Files - Estilo neutro e legível */
+    div[data-testid="stFileUploader"] button,
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"],
+    button[data-testid="baseButton-secondary"] {
         background-color: #e9ecef !important;
         background: #e9ecef !important;
-    }
-    [data-testid="stFileUploader"] * {
         color: #262730 !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 6px !important;
+        padding: 10px 20px !important;
+        font-weight: 500 !important;
+        font-family: 'Montserrat', sans-serif !important;
+        font-size: 14px !important;
     }
-    [data-testid="stFileUploader"] .uploadedFile {
+    div[data-testid="stFileUploader"] button:hover,
+    button[data-testid="baseButton-secondary"]:hover {
+        background-color: #dee2e6 !important;
+        background: #dee2e6 !important;
+        color: #262730 !important;
+        border-color: #adb5bd !important;
+    }
+    
+    /* Texto dentro do uploader - FORÇAR cor escura */
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] label,
+    div[data-testid="stFileUploader"] span,
+    div[data-testid="stFileUploader"] div,
+    div[data-testid="stFileUploader"] * {
+        color: #262730 !important;
+        font-family: 'Montserrat', sans-serif !important;
+    }
+    
+    /* Arquivo carregado */
+    div[data-testid="stFileUploader"] .uploadedFile,
+    div[data-testid="stFileUploader"] [class*="uploaded"],
+    div[data-testid="stFileUploader"] [class*="file"] {
         background-color: #f8f9fa !important;
         background: #f8f9fa !important;
         border: 1px solid #e0e0e0 !important;
         border-radius: 6px !important;
         padding: 12px !important;
+        color: #262730 !important;
     }
-    [data-testid="stFileUploader"] .uploadedFile:hover {
-        background-color: #f0f2f6 !important;
-        background: #f0f2f6 !important;
+    div[data-testid="stFileUploader"] .uploadedFile *,
+    div[data-testid="stFileUploader"] [class*="uploaded"] * {
+        color: #262730 !important;
+    }
+    
+    /* Override específico para qualquer elemento escuro */
+    div[data-testid="stFileUploader"] [style*="background"],
+    div[data-testid="stFileUploader"] [style*="color"] {
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+        color: #262730 !important;
     }
     
     /* Botões - Forçar cores claras em TODOS */
@@ -344,8 +390,7 @@ def calcular_dataframe(df, idx):
 
 def gerar_excel_final(df_original, calc_data):
     output = io.BytesIO()
-    # Usar constant_memory para melhor performance com arquivos grandes
-    wb = pd.ExcelWriter(output, engine='xlsxwriter', options={'constant_memory': True})
+    wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
     
     base_fmt = {'font_name': 'Montserrat', 'font_size': 9}
