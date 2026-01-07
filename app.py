@@ -82,110 +82,120 @@ def ler_e_limpar(file):
 @st.cache_data(show_spinner=False)
 def gerar_excel(df, idx):
     output = io.BytesIO()
-    wb = xlsxwriter.Workbook(output, {'nan_inf_to_errors': True})
-    ws = wb.add_worksheet("Analítico")
 
-    base = {'font_size': 9}
-    f_head = wb.add_format({**base, 'bold': True, 'bg_color': '#0030B9', 'font_color': 'white'})
-    f_num = wb.add_format({**base, 'num_format': '#,##0.00'})
-    f_pct = wb.add_format({**base, 'num_format': '0.00%'})
-    f_date = wb.add_format({**base, 'num_format': 'dd/mm/yyyy'})
+    with pd.ExcelWriter(
+        output,
+        engine="xlsxwriter",
+        engine_kwargs={"options": {"nan_inf_to_errors": True}}
+    ) as writer:
 
-    # Cabeçalhos
-    for i, c in enumerate(df.columns):
-        ws.write(0, i, c, f_head)
-        if i == idx['val']:
-            ws.set_column(i, i, 16, f_num)
-        elif i in [idx['aq'], idx['venc'], idx['pos']]:
-            ws.set_column(i, i, 12, f_date)
-        else:
-            ws.set_column(i, i, 14)
+        wb = writer.book
+        ws = wb.add_worksheet("Analítico")
+        writer.sheets["Analítico"] = ws
 
-    df.to_excel(wb, sheet_name="Analítico", startrow=1, index=False)
+        base = {'font_size': 9}
+        f_head = wb.add_format({'bold': True, 'bg_color': '#0030B9', 'font_color': 'white', **base})
+        f_num = wb.add_format({'num_format': '#,##0.00', **base})
+        f_pct = wb.add_format({'num_format': '0.00%', **base})
+        f_date = wb.add_format({'num_format': 'dd/mm/yyyy', **base})
 
-    total = len(df)
-    L = {k: xl_col_to_name(v) for k, v in idx.items() if v is not None}
+        # Cabeçalhos
+        for i, c in enumerate(df.columns):
+            ws.write(0, i, c, f_head)
+            if i == idx['val']:
+                ws.set_column(i, i, 16, f_num)
+            elif i in [idx['aq'], idx['venc'], idx['pos']]:
+                ws.set_column(i, i, 12, f_date)
+            else:
+                ws.set_column(i, i, 14)
 
-    c0 = len(df.columns)
-    def C(n): return xl_col_to_name(n)
+        # Dados
+        df.to_excel(writer, sheet_name="Analítico", startrow=1, index=False)
 
-    headers = [
-        "Dias Aq x Venc", "Dias Atraso",
-        "% Nota", "% Nota Pro rata", "% Nota Final",
-        "% Venc", "% Venc Pro rata", "% Venc Final",
-        "PDD Nota Calc", "PDD Venc Calc"
-    ]
+        total = len(df)
+        L = {k: xl_col_to_name(v) for k, v in idx.items() if v is not None}
+        c0 = len(df.columns)
 
-    for i, h in enumerate(headers):
-        ws.write(0, c0+i, h, f_head)
-        ws.set_column(c0+i, c0+i, 16)
+        def C(n): 
+            return xl_col_to_name(n)
 
-    r1 = 2
-    rN = total + 1
+        headers = [
+            "Dias Aq x Venc", "Dias Atraso",
+            "% Nota", "% Nota Pro rata", "% Nota Final",
+            "% Venc", "% Venc Pro rata", "% Venc Final",
+            "PDD Nota Calc", "PDD Venc Calc"
+        ]
 
-    ws.write_array_formula(
-        r1-1, c0, rN-1, c0,
-        f'={L["venc"]}{r1}:{L["venc"]}{rN}-{L["aq"]}{r1}:{L["aq"]}{rN}'
-    )
+        for i, h in enumerate(headers):
+            ws.write(0, c0 + i, h, f_head)
+            ws.set_column(c0 + i, c0 + i, 16)
 
-    ws.write_array_formula(
-        r1-1, c0+1, rN-1, c0+1,
-        f'={L["pos"]}{r1}:{L["pos"]}{rN}-{L["venc"]}{r1}:{L["venc"]}{rN}'
-    )
+        r1 = 2
+        rN = total + 1
 
-    ws.write_array_formula(
-        r1-1, c0+2, rN-1, c0+2,
-        f'=VLOOKUP({L["rat"]}{r1}:{L["rat"]}{rN},Regras!A:C,2,0)', f_pct
-    )
+        ws.write_array_formula(
+            r1-1, c0, rN-1, c0,
+            f'={L["venc"]}{r1}:{L["venc"]}{rN}-{L["aq"]}{r1}:{L["aq"]}{rN}'
+        )
 
-    ws.write_array_formula(
-        r1-1, c0+3, rN-1, c0+3,
-        f'=IF({L["rat"]}{r1}:{L["rat"]}{rN}="H",1,'
-        f'MIN(1,MAX(0,({L["pos"]}{r1}:{L["pos"]}{rN}-{L["aq"]}{r1}:{L["aq"]}{rN})/'
-        f'{C(c0)}{r1}:{C(c0)}{rN})))', f_pct
-    )
+        ws.write_array_formula(
+            r1-1, c0+1, rN-1, c0+1,
+            f'={L["pos"]}{r1}:{L["pos"]}{rN}-{L["venc"]}{r1}:{L["venc"]}{rN}'
+        )
 
-    ws.write_array_formula(
-        r1-1, c0+4, rN-1, c0+4,
-        f'={C(c0+2)}{r1}:{C(c0+2)}{rN}*{C(c0+3)}{r1}:{C(c0+3)}{rN}', f_pct
-    )
+        ws.write_array_formula(
+            r1-1, c0+2, rN-1, c0+2,
+            f'=VLOOKUP({L["rat"]}{r1}:{L["rat"]}{rN},Regras!A:C,2,0)', f_pct
+        )
 
-    ws.write_array_formula(
-        r1-1, c0+5, rN-1, c0+5,
-        f'=VLOOKUP({L["rat"]}{r1}:{L["rat"]}{rN},Regras!A:C,3,0)', f_pct
-    )
+        ws.write_array_formula(
+            r1-1, c0+3, rN-1, c0+3,
+            f'=IF({L["rat"]}{r1}:{L["rat"]}{rN}="H",1,'
+            f'MIN(1,MAX(0,({L["pos"]}{r1}:{L["pos"]}{rN}-{L["aq"]}{r1}:{L["aq"]}{rN})/'
+            f'{C(c0)}{r1}:{C(c0)}{rN})))', f_pct
+        )
 
-    ws.write_array_formula(
-        r1-1, c0+6, rN-1, c0+6,
-        f'=IF({C(c0+1)}{r1}:{C(c0+1)}{rN}<=20,0,'
-        f'IF({C(c0+1)}{r1}:{C(c0+1)}{rN}>=60,1,'
-        f'({C(c0+1)}{r1}:{C(c0+1)}{rN}-20)/40))', f_pct
-    )
+        ws.write_array_formula(
+            r1-1, c0+4, rN-1, c0+4,
+            f'={C(c0+2)}{r1}:{C(c0+2)}{rN}*{C(c0+3)}{r1}:{C(c0+3)}{rN}', f_pct
+        )
 
-    ws.write_array_formula(
-        r1-1, c0+7, rN-1, c0+7,
-        f'={C(c0+5)}{r1}:{C(c0+5)}{rN}*{C(c0+6)}{r1}:{C(c0+6)}{rN}', f_pct
-    )
+        ws.write_array_formula(
+            r1-1, c0+5, rN-1, c0+5,
+            f'=VLOOKUP({L["rat"]}{r1}:{L["rat"]}{rN},Regras!A:C,3,0)', f_pct
+        )
 
-    ws.write_array_formula(
-        r1-1, c0+8, rN-1, c0+8,
-        f'={L["val"]}{r1}:{L["val"]}{rN}*{C(c0+4)}{r1}:{C(c0+4)}{rN}', f_num
-    )
+        ws.write_array_formula(
+            r1-1, c0+6, rN-1, c0+6,
+            f'=IF({C(c0+1)}{r1}:{C(c0+1)}{rN}<=20,0,'
+            f'IF({C(c0+1)}{r1}:{C(c0+1)}{rN}>=60,1,'
+            f'({C(c0+1)}{r1}:{C(c0+1)}{rN}-20)/40))', f_pct
+        )
 
-    ws.write_array_formula(
-        r1-1, c0+9, rN-1, c0+9,
-        f'={L["val"]}{r1}:{L["val"]}{rN}*{C(c0+7)}{r1}:{C(c0+7)}{rN}', f_num
-    )
+        ws.write_array_formula(
+            r1-1, c0+7, rN-1, c0+7,
+            f'={C(c0+5)}{r1}:{C(c0+5)}{rN}*{C(c0+6)}{r1}:{C(c0+6)}{rN}', f_pct
+        )
 
-    # Aba Regras
-    ws_r = wb.add_worksheet("Regras")
-    for i, c in enumerate(REGRAS.columns):
-        ws_r.write(0, i, c, f_head)
-    REGRAS.to_excel(wb, sheet_name="Regras", startrow=1, index=False)
+        ws.write_array_formula(
+            r1-1, c0+8, rN-1, c0+8,
+            f'={L["val"]}{r1}:{L["val"]}{rN}*{C(c0+4)}{r1}:{C(c0+4)}{rN}', f_num
+        )
 
-    wb.close()
+        ws.write_array_formula(
+            r1-1, c0+9, rN-1, c0+9,
+            f'={L["val"]}{r1}:{L["val"]}{rN}*{C(c0+7)}{r1}:{C(c0+7)}{rN}', f_num
+        )
+
+        # Aba Regras
+        ws_r = wb.add_worksheet("Regras")
+        for i, c in enumerate(REGRAS.columns):
+            ws_r.write(0, i, c, f_head)
+        REGRAS.to_excel(writer, sheet_name="Regras", startrow=1, index=False)
+
     output.seek(0)
     return output
+
 
 # ======================================================
 # FRONTEND
