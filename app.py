@@ -75,6 +75,15 @@ st.markdown("""
         color: #333333 !important; /* Cinza escuro */
     }
 
+    /* --- FIX NOME ARQUIVO (Ajuste Solicitado) --- */
+    /* Garante que o texto do arquivo e o tamanho (small) fiquem cinza escuro */
+    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p,
+    div[data-testid="stFileUploader"] small,
+    section[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p,
+    section[data-testid="stFileUploader"] small {
+        color: #333333 !important;
+    }
+
     /* --- TABELAS HTML --- */
     .styled-table {
         width: 100%;
