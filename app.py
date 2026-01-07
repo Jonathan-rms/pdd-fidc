@@ -80,45 +80,73 @@ st.markdown("""
         color: white !important;
     }
     
-    /* Tabelas - Fundo branco FORÇADO com seletores mais específicos */
+    /* Tabelas - Fundo branco FORÇADO ULTRA AGRESSIVO */
     div[data-testid="stDataFrame"],
+    div[data-testid="stDataFrame"] *,
     div[data-testid="stDataFrame"] > div,
     div[data-testid="stDataFrame"] > div > div,
+    div[data-testid="stDataFrame"] > div > div > div,
     div[data-testid="stDataFrame"] table,
+    div[data-testid="stDataFrame"] table *,
     div[data-testid="stDataFrame"] tbody,
+    div[data-testid="stDataFrame"] tbody *,
     div[data-testid="stDataFrame"] tbody tr,
+    div[data-testid="stDataFrame"] tbody tr *,
     div[data-testid="stDataFrame"] tbody td,
-    table[data-testid="stDataFrame"],
+    div[data-testid="stDataFrame"] tbody td *,
+    table,
+    table *,
     table tbody,
     table tbody tr,
     table tbody td {
-        background: #ffffff !important; background-color: #ffffff !important;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
         color: #262730 !important;
     }
     div[data-testid="stDataFrame"] {
-        padding: 0; border-radius: 8px; border: 1px solid #e0e0e0; overflow: hidden;
+        padding: 0 !important;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        overflow: hidden;
         background: #ffffff !important;
     }
     div[data-testid="stDataFrame"] table {
-        border-collapse: collapse; background: #ffffff !important;
+        border-collapse: collapse;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
     }
-    div[data-testid="stDataFrame"] thead {
-        background: #e8f0fe !important; background-color: #e8f0fe !important;
+    div[data-testid="stDataFrame"] thead,
+    div[data-testid="stDataFrame"] thead * {
+        background: #e8f0fe !important;
+        background-color: #e8f0fe !important;
     }
-    div[data-testid="stDataFrame"] th {
-        background: #e8f0fe !important; background-color: #e8f0fe !important;
-        color: #0030B9 !important; font-size: 14px; font-weight: 600;
-        padding: 12px; border-bottom: 2px solid #0030B9;
+    div[data-testid="stDataFrame"] th,
+    div[data-testid="stDataFrame"] th * {
+        background: #e8f0fe !important;
+        background-color: #e8f0fe !important;
+        color: #0030B9 !important;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 12px;
+        border-bottom: 2px solid #0030B9;
     }
-    div[data-testid="stDataFrame"] td {
-        background: #ffffff !important; background-color: #ffffff !important;
-        padding: 10px 12px; border-bottom: 1px solid #f0f0f0;
+    div[data-testid="stDataFrame"] td,
+    div[data-testid="stDataFrame"] td * {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #262730 !important;
+        padding: 10px 12px;
+        border-bottom: 1px solid #f0f0f0;
     }
-    div[data-testid="stDataFrame"] tr {
-        background: #ffffff !important; background-color: #ffffff !important;
+    div[data-testid="stDataFrame"] tr,
+    div[data-testid="stDataFrame"] tr * {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
     }
-    div[data-testid="stDataFrame"] tr:hover td {
-        background: #f8f9fa !important; background-color: #f8f9fa !important;
+    div[data-testid="stDataFrame"] tr:hover td,
+    div[data-testid="stDataFrame"] tr:hover td * {
+        background: #f8f9fa !important;
+        background-color: #f8f9fa !important;
     }
     
     /* Info boxes */
@@ -128,20 +156,30 @@ st.markdown("""
     }
     [data-testid="stInfo"] * { color: #262730; }
     
-    /* Títulos específicos em AZUL */
-    [data-testid="stInfo"] strong { color: #0030B9 !important; }
-    h3 { color: #0030B9 !important; }
+    /* Títulos específicos em AZUL - FORÇAR */
+    [data-testid="stInfo"] strong,
+    [data-testid="stInfo"] strong *,
+    [data-testid="stInfo"] p strong {
+        color: #0030B9 !important;
+    }
+    h3, h3 * {
+        color: #0030B9 !important; font-weight: 600;
+    }
     
-    /* Números das métricas em AZUL */
-    div[data-testid="stMetricValue"] {
-        font-size: 24px; color: #0030B9 !important; font-weight: 600;
+    /* Números das métricas em AZUL - FORÇAR */
+    div[data-testid="stMetricValue"],
+    div[data-testid="stMetricValue"] *,
+    [data-testid="stMetricValue"] {
+        font-size: 24px !important;
+        color: #0030B9 !important;
+        font-weight: 600 !important;
     }
     div[data-testid="stMetricLabel"] {
         font-size: 14px; font-weight: 500; color: #262730;
     }
     
     /* Títulos gerais */
-    h1, h2, h3 { color: #0030B9; font-weight: 600; }
+    h1, h2, h3 { color: #0030B9 !important; font-weight: 600; }
     
     /* Barra de Progresso */
     .stProgress > div > div > div > div { 
@@ -182,21 +220,24 @@ st.markdown("""
         background: #ffffff !important;
     }
     
+    /* Expander - Corrigir truncamento e cor azul */
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary *,
+    [data-testid="stExpander"] button,
+    [data-testid="stExpander"] button * {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        color: #0030B9 !important;
+        font-weight: 600 !important;
+        max-width: 100% !important;
+    }
+    
     /* Scrollbar claro */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background: #555;
-    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -499,12 +540,16 @@ if 'current_file_name' not in st.session_state:
 if uploaded_file:
     if st.session_state.current_file_name != uploaded_file.name:
         start_time = time.time()
-        status_text = st.empty()
-        progress_bar = st.progress(0)
+        
+        # Loading dentro do container do upload
+        with upload_container:
+            status_text = st.empty()
+            progress_bar = st.progress(0)
         
         # Etapa 1: Leitura e limpeza
         etapa_start = time.time()
-        status_text.text("Lendo e limpando arquivo...")
+        with upload_container:
+            status_text.text("Lendo e limpando arquivo...")
         df_raw, err = ler_e_limpar(uploaded_file)
         etapa_leitura = time.time() - etapa_start
         
@@ -649,7 +694,7 @@ if st.session_state.processed_data:
     
     st.dataframe(df_show, use_container_width=True)
     
-    with st.expander("📚 Ver Regras de Cálculo"):
+    with st.expander("📚 Ver Regras de Cálculo", expanded=False):
         rc1, rc2 = st.columns(2)
         with rc1:
             st.write("**Tabela de Parâmetros**")
