@@ -21,45 +21,48 @@ st.markdown("""
     :root { --bg: #ffffff; --text: #262730; }
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
-    /* --- File Uploader (CORREÇÃO DE CONTRASTE) --- */
-    /* Container Geral */
+    /* --- File Uploader (FIX DEFINITIVO DE COR) --- */
+    
+    /* Container principal */
     div[data-testid="stFileUploader"] {
-        background-color: #ffffff !important;
-        border: 1px solid #e0e0e0; 
-        border-radius: 8px; 
-        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
     }
     
     /* Botão 'Browse files' */
-    div[data-testid="stFileUploader"] button {
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
         background: #e9ecef !important; 
-        color: #000000 !important; /* Preto no botão */
-        border: 1px solid #ced4da;
+        color: #000000 !important;
+        border: 1px solid #ced4da !important;
         font-weight: 600 !important;
     }
     
-    /* Texto 'Drag and drop file here' e Limites */
-    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p,
+    /* Texto "Drag and drop" e "Limit 200MB" */
+    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p, 
     div[data-testid="stFileUploader"] small {
-        color: #000000 !important; /* Preto Absoluto */
-        font-weight: 500 !important;
+        color: #333333 !important; /* Cinza escuro para instruções */
+    }
+
+    /* --- NOME DO ARQUIVO CARREGADO (AQUI ESTAVA O ERRO) --- */
+    /* Alvo: O item da lista que aparece após o upload */
+    div[data-testid="stFileUploader"] div[role="listitem"],
+    div[data-testid="stFileUploader"] div[role="listitem"] > div {
+        background-color: #f0f2f6 !important; /* Fundo cinza claro para contraste */
+        color: #000000 !important; /* Texto preto */
+        border: 1px solid #e0e0e0 !important;
     }
     
-    /* Nome do Arquivo Carregado */
-    div[data-testid="stFileUploader"] .uploadedFileName,
-    div[class*="uploadedFileName"] {
-        color: #000000 !important; /* Preto Absoluto */
-        font-weight: 700 !important; /* Negrito */
-    }
-    
-    /* Fundo da área de Drop interna */
-    section[data-testid="stFileUploader"] > div {
-        background-color: #f8f9fa !important; /* Cinza muito suave para diferenciar do fundo branco */
-    }
-    
-    /* Ícone de remover (X) */
-    div[data-testid="stFileUploader"] [data-testid="baseButton-secondary"] {
+    /* Forçar especificamente o texto do nome do arquivo a ser PRETO */
+    div[data-testid="stFileUploader"] div[role="listitem"] div[data-testid="stMarkdownContainer"] p {
         color: #000000 !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Ícone de Delete (X) e Status */
+    div[data-testid="stFileUploader"] div[role="listitem"] button,
+    div[data-testid="stFileUploader"] div[role="listitem"] svg {
+        color: #000000 !important;
+        fill: #000000 !important;
     }
 
     /* --- BOTÕES GERAIS --- */
@@ -78,7 +81,7 @@ st.markdown("""
     div[data-testid="stDownloadButton"] { margin-top: 2px; }
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
-        color: #f0f0f0 !important; /* Cinza claro */
+        color: #f0f0f0 !important;
         width: 100%;
         height: 50px !important;
     }
