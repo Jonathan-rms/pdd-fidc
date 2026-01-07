@@ -17,106 +17,35 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
     
-    /* Fonte Montserrat global */
-    * {
-        font-family: 'Montserrat', sans-serif !important;
-    }
-    
-    /* Forçar tema claro - Solução completa */
-    :root {
-        --background-color: #ffffff !important;
-        --text-color: #262730 !important;
-    }
-    
-    /* Forçar fundo branco em todos os containers */
+    * { font-family: 'Montserrat', sans-serif !important; }
+    :root { --bg: #ffffff; --text: #262730; }
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"], 
     [data-testid="stToolbar"], .main .block-container, body {
-        background-color: #ffffff !important;
-        color: #262730 !important;
+        background: #ffffff !important; color: #262730 !important;
     }
     
-    /* File Uploader - SOLUÇÃO DEFINITIVA */
-    /* Forçar TODOS os elementos do uploader para cores claras */
-    div[data-testid="stFileUploader"],
-    div[data-testid="stFileUploader"] *,
-    div[data-testid="stFileUploader"] > *,
-    div[data-testid="stFileUploader"] > * > *,
-    div[data-testid="stFileUploader"] > * > * > * {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
-        color: #262730 !important;
+    /* File Uploader - Otimizado */
+    div[data-testid="stFileUploader"], div[data-testid="stFileUploader"] * {
+        background: #ffffff !important; color: #262730 !important;
     }
-    
-    /* Container principal */
     div[data-testid="stFileUploader"] {
-        border: 1px solid #e0e0e0 !important;
-        border-radius: 8px !important;
-        padding: 16px !important;
-        background: #ffffff !important;
+        border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px;
     }
-    
-    /* Área de drag and drop */
     div[data-testid="stFileUploader"] > div {
-        background: #ffffff !important;
-        border: 2px dashed #d0d0d0 !important;
-        border-radius: 6px !important;
-        padding: 20px !important;
+        border: 2px dashed #d0d0d0; border-radius: 6px; padding: 20px;
     }
-    
-    /* Botão Browse Files - Estilo neutro e legível */
-    div[data-testid="stFileUploader"] button,
-    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"],
-    button[data-testid="baseButton-secondary"] {
-        background-color: #e9ecef !important;
-        background: #e9ecef !important;
-        color: #262730 !important;
-        border: 1px solid #ced4da !important;
-        border-radius: 6px !important;
-        padding: 10px 20px !important;
-        font-weight: 500 !important;
-        font-family: 'Montserrat', sans-serif !important;
-        font-size: 14px !important;
+    div[data-testid="stFileUploader"] button {
+        background: #e9ecef !important; color: #262730 !important;
+        border: 1px solid #ced4da; border-radius: 6px; padding: 10px 20px;
+        font-weight: 500; font-size: 14px;
     }
-    div[data-testid="stFileUploader"] button:hover,
-    button[data-testid="baseButton-secondary"]:hover {
-        background-color: #dee2e6 !important;
-        background: #dee2e6 !important;
-        color: #262730 !important;
-        border-color: #adb5bd !important;
+    div[data-testid="stFileUploader"] button:hover {
+        background: #dee2e6 !important; border-color: #adb5bd;
     }
-    
-    /* Texto dentro do uploader - FORÇAR cor escura */
-    div[data-testid="stFileUploader"] p,
-    div[data-testid="stFileUploader"] label,
-    div[data-testid="stFileUploader"] span,
-    div[data-testid="stFileUploader"] div,
-    div[data-testid="stFileUploader"] * {
-        color: #262730 !important;
-        font-family: 'Montserrat', sans-serif !important;
-    }
-    
-    /* Arquivo carregado */
     div[data-testid="stFileUploader"] .uploadedFile,
-    div[data-testid="stFileUploader"] [class*="uploaded"],
-    div[data-testid="stFileUploader"] [class*="file"] {
-        background-color: #f8f9fa !important;
-        background: #f8f9fa !important;
-        border: 1px solid #e0e0e0 !important;
-        border-radius: 6px !important;
-        padding: 12px !important;
-        color: #262730 !important;
-    }
-    div[data-testid="stFileUploader"] .uploadedFile *,
-    div[data-testid="stFileUploader"] [class*="uploaded"] * {
-        color: #262730 !important;
-    }
-    
-    /* Override específico para qualquer elemento escuro */
-    div[data-testid="stFileUploader"] [style*="background"],
-    div[data-testid="stFileUploader"] [style*="color"] {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
-        color: #262730 !important;
+    div[data-testid="stFileUploader"] [class*="uploaded"] {
+        background: #f8f9fa !important; border: 1px solid #e0e0e0;
+        border-radius: 6px; padding: 12px;
     }
     
     /* Botões - Forçar cores claras em TODOS */
@@ -151,89 +80,68 @@ st.markdown("""
         color: white !important;
     }
     
-    /* Tabelas e DataFrames - Cores claras FORÇADAS */
+    /* Tabelas - Fundo branco FORÇADO com seletores mais específicos */
     div[data-testid="stDataFrame"],
     div[data-testid="stDataFrame"] > div,
+    div[data-testid="stDataFrame"] > div > div,
     div[data-testid="stDataFrame"] table,
     div[data-testid="stDataFrame"] tbody,
     div[data-testid="stDataFrame"] tbody tr,
-    div[data-testid="stDataFrame"] tbody td {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
+    div[data-testid="stDataFrame"] tbody td,
+    table[data-testid="stDataFrame"],
+    table tbody,
+    table tbody tr,
+    table tbody td {
+        background: #ffffff !important; background-color: #ffffff !important;
         color: #262730 !important;
     }
     div[data-testid="stDataFrame"] {
-        padding: 0 !important;
-        border-radius: 8px !important;
-        border: 1px solid #e0e0e0 !important;
-        overflow: hidden !important;
+        padding: 0; border-radius: 8px; border: 1px solid #e0e0e0; overflow: hidden;
+        background: #ffffff !important;
     }
     div[data-testid="stDataFrame"] table {
-        border-collapse: collapse !important;
-        background: #ffffff !important;
-        background-color: #ffffff !important;
+        border-collapse: collapse; background: #ffffff !important;
     }
     div[data-testid="stDataFrame"] thead {
-        background-color: #e8f0fe !important;
-        background: #e8f0fe !important;
+        background: #e8f0fe !important; background-color: #e8f0fe !important;
     }
     div[data-testid="stDataFrame"] th {
-        background-color: #e8f0fe !important;
-        background: #e8f0fe !important;
-        color: #0030B9 !important;
-        font-size: 14px !important;
-        font-weight: 600 !important;
-        padding: 12px !important;
-        border-bottom: 2px solid #0030B9 !important;
+        background: #e8f0fe !important; background-color: #e8f0fe !important;
+        color: #0030B9 !important; font-size: 14px; font-weight: 600;
+        padding: 12px; border-bottom: 2px solid #0030B9;
     }
     div[data-testid="stDataFrame"] td {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
-        color: #262730 !important;
-        padding: 10px 12px !important;
-        border-bottom: 1px solid #f0f0f0 !important;
+        background: #ffffff !important; background-color: #ffffff !important;
+        padding: 10px 12px; border-bottom: 1px solid #f0f0f0;
     }
     div[data-testid="stDataFrame"] tr {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
+        background: #ffffff !important; background-color: #ffffff !important;
     }
     div[data-testid="stDataFrame"] tr:hover td {
-        background-color: #f8f9fa !important;
-        background: #f8f9fa !important;
+        background: #f8f9fa !important; background-color: #f8f9fa !important;
     }
     
-    /* Info boxes - Melhorado */
+    /* Info boxes */
     [data-testid="stInfo"] {
-        background-color: #f0f7ff !important;
-        border: 1px solid #b3d9ff !important;
-        border-left: 4px solid #0030B9 !important;
-        border-radius: 6px !important;
-        padding: 12px 16px !important;
+        background: #f0f7ff; border: 1px solid #b3d9ff;
+        border-left: 4px solid #0030B9; border-radius: 6px; padding: 12px 16px;
     }
-    [data-testid="stInfo"] * {
-        color: #262730 !important;
+    [data-testid="stInfo"] * { color: #262730; }
+    
+    /* Títulos específicos em AZUL */
+    [data-testid="stInfo"] strong { color: #0030B9 !important; }
+    h3 { color: #0030B9 !important; }
+    
+    /* Números das métricas em AZUL */
+    div[data-testid="stMetricValue"] {
+        font-size: 24px; color: #0030B9 !important; font-weight: 600;
+    }
+    div[data-testid="stMetricLabel"] {
+        font-size: 14px; font-weight: 500; color: #262730;
     }
     
-    /* Métricas */
-    div[data-testid="stMetricValue"] { 
-        font-size: 24px !important; 
-        color: #001074 !important;
-        font-family: 'Montserrat', sans-serif !important;
-        font-weight: 600 !important;
-    }
-    div[data-testid="stMetricLabel"] { 
-        font-size: 14px !important; 
-        font-weight: 500 !important; 
-        color: #262730 !important;
-        font-family: 'Montserrat', sans-serif !important;
-    }
-    
-    /* Identidade Visual */
-    h1, h2, h3 { 
-        color: #0030B9 !important;
-        font-family: 'Montserrat', sans-serif !important;
-        font-weight: 600 !important;
-    }
+    /* Títulos gerais */
+    h1, h2, h3 { color: #0030B9; font-weight: 600; }
     
     /* Barra de Progresso */
     .stProgress > div > div > div > div { 
@@ -606,7 +514,8 @@ if uploaded_file:
         else:
             # Etapa 2: Identificação de colunas
             etapa_start = time.time()
-            progress_bar.progress(20, text="Identificando colunas...")
+            with upload_container:
+                progress_bar.progress(20, text="Identificando colunas...")
             
             def get_col(keys):
                 return next((df_raw.columns.get_loc(c) for c in df_raw.columns if any(k in c.lower().replace('_','') for k in keys)), None)
@@ -624,15 +533,17 @@ if uploaded_file:
             else:
                 # Etapa 3: Cálculo
                 etapa_start = time.time()
-                status_text.text("Calculando cenários...")
-                progress_bar.progress(40)
+                with upload_container:
+                    status_text.text("Calculando cenários...")
+                    progress_bar.progress(40)
                 df_calc = calcular_dataframe(df_raw, idx)
                 etapa_calculo = time.time() - etapa_start
                 
                 # Etapa 4: Geração do Excel
                 etapa_start = time.time()
-                status_text.text("Gerando arquivo Excel...")
-                progress_bar.progress(60)
+                with upload_container:
+                    status_text.text("Gerando arquivo Excel...")
+                    progress_bar.progress(60)
                 calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
                 xls_bytes = gerar_excel_final(df_raw, calc_data)
                 etapa_excel = time.time() - etapa_start
@@ -640,9 +551,10 @@ if uploaded_file:
                 # Tempo total
                 tempo_total = time.time() - start_time
                 
-                progress_bar.progress(100, text="Concluído!")
-                status_text.empty()
-                progress_bar.empty()
+                with upload_container:
+                    progress_bar.progress(100, text="Concluído!")
+                    status_text.empty()
+                    progress_bar.empty()
                 
                 st.session_state.processed_data = {
                     'df_calc': df_calc, 
