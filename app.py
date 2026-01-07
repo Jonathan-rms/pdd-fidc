@@ -139,8 +139,11 @@ st.markdown("""
         border: 1px solid #e0e0e0; margin-top: 5px; display: block; width: fit-content;
     }
     .section-title { color: #0030B9; font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; }
+    
+    /* Espaçadores */
     .spacer-sm { height: 10px; }
     .spacer-md { height: 30px; }
+    .spacer-lg { height: 80px; } /* NOVO ESPAÇAMENTO MAIOR */
 </style>
 """, unsafe_allow_html=True)
 
@@ -548,7 +551,7 @@ if st.session_state.processed_data:
         m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cv)), unsafe_allow_html=True)
         m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif_v)), unsafe_allow_html=True)
 
-    st.markdown('<div class="spacer-md"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="spacer-lg"></div>', unsafe_allow_html=True)
 
     st.info("**Detalhamento** (Por rating)")
     
@@ -575,7 +578,7 @@ if st.session_state.processed_data:
     
     st.markdown(make_html_table(df_show, idx_col_name="Rating"), unsafe_allow_html=True)
     
-    st.markdown('<div class="spacer-md"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="spacer-lg"></div>', unsafe_allow_html=True)
 
     st.info("📚 Regras e Lógica de Cálculo")
     
