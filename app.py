@@ -21,15 +21,47 @@ st.markdown("""
     :root { --bg: #ffffff; --text: #262730; }
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
-    /* --- File Uploader --- */
+    /* --- File Uploader (CORREÇÃO DE CONTRASTE) --- */
+    /* Container Geral */
     div[data-testid="stFileUploader"] {
-        border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px;
-    }
-    div[data-testid="stFileUploader"] button {
-        background: #e9ecef !important; color: #262730 !important;
-        border: 1px solid #ced4da;
+        background-color: #ffffff !important;
+        border: 1px solid #e0e0e0; 
+        border-radius: 8px; 
+        padding: 16px;
     }
     
+    /* Botão 'Browse files' */
+    div[data-testid="stFileUploader"] button {
+        background: #e9ecef !important; 
+        color: #000000 !important; /* Preto no botão */
+        border: 1px solid #ced4da;
+        font-weight: 600 !important;
+    }
+    
+    /* Texto 'Drag and drop file here' e Limites */
+    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p,
+    div[data-testid="stFileUploader"] small {
+        color: #000000 !important; /* Preto Absoluto */
+        font-weight: 500 !important;
+    }
+    
+    /* Nome do Arquivo Carregado */
+    div[data-testid="stFileUploader"] .uploadedFileName,
+    div[class*="uploadedFileName"] {
+        color: #000000 !important; /* Preto Absoluto */
+        font-weight: 700 !important; /* Negrito */
+    }
+    
+    /* Fundo da área de Drop interna */
+    section[data-testid="stFileUploader"] > div {
+        background-color: #f8f9fa !important; /* Cinza muito suave para diferenciar do fundo branco */
+    }
+    
+    /* Ícone de remover (X) */
+    div[data-testid="stFileUploader"] [data-testid="baseButton-secondary"] {
+        color: #000000 !important;
+    }
+
     /* --- BOTÕES GERAIS --- */
     div.stButton > button,
     button[data-testid="baseButton-secondary"],
@@ -60,27 +92,17 @@ st.markdown("""
         border-left: 4px solid #0030B9; border-radius: 6px;
     }
     
-    /* --- METRICS (Ajuste de Cor dos Labels) --- */
+    /* --- METRICS --- */
     div[data-testid="stMetricValue"] {
         font-size: 24px !important;
         color: #0030B9 !important;
         font-weight: 600 !important;
     }
-    /* CORRIGIDO: Forçar cor cinza escuro nos labels para não ficar branco */
     div[data-testid="stMetricLabel"], 
     div[data-testid="stMetricLabel"] > div,
     label[data-testid="stMetricLabel"] {
         font-size: 14px !important; 
         font-weight: 600 !important; 
-        color: #333333 !important; /* Cinza escuro */
-    }
-
-    /* --- FIX NOME ARQUIVO (Ajuste Solicitado) --- */
-    /* Garante que o texto do arquivo e o tamanho (small) fiquem cinza escuro */
-    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p,
-    div[data-testid="stFileUploader"] small,
-    section[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p,
-    section[data-testid="stFileUploader"] small {
         color: #333333 !important;
     }
 
@@ -117,10 +139,10 @@ st.markdown("""
         color: #0030B9;
     }
     
-    /* --- CARD LÓGICA (Clean) --- */
+    /* --- CARD LÓGICA --- */
     .logic-box {
         background: white;
-        padding: 10px 0; /* Remove padding lateral para alinhar com tabela */
+        padding: 10px 0;
         border-radius: 0;
         border: none;
     }
@@ -572,7 +594,6 @@ if st.session_state.processed_data:
     
     st.markdown('<div class="spacer-md"></div>', unsafe_allow_html=True)
 
-    # --- NOVO LAYOUT REGRAS E LÓGICA (Meio a Meio e Fundo Branco) ---
     st.markdown('<div class="section-title">📚 Regras e Lógica de Cálculo</div>', unsafe_allow_html=True)
     
     col_regras, col_logica = st.columns(2)
