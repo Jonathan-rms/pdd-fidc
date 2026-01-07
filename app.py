@@ -22,72 +22,53 @@ st.markdown("""
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
     /* ============================================================ */
-    /* CORREÇÃO DO FILE UPLOADER (Força Bruta para Tema Claro)      */
+    /* CORREÇÃO VISUAL DO UPLOADER (ELIMINAR BARRA PRETA)           */
     /* ============================================================ */
     
-    /* 1. Container e Texto Geral */
+    /* 1. Área externa do Uploader */
     div[data-testid="stFileUploader"] {
-        padding: 16px;
-        border-radius: 8px;
+        padding: 10px;
     }
-    
-    /* 2. Força FUNDO BRANCO e TEXTO ESCURO em quase tudo dentro do uploader */
-    div[data-testid="stFileUploader"] div,
-    div[data-testid="stFileUploader"] span,
-    div[data-testid="stFileUploader"] p,
-    div[data-testid="stFileUploader"] small,
-    div[data-testid="stFileUploader"] label {
-        background-color: #ffffff !important;
+
+    /* 2. Área de Drag & Drop (A barra que estava ficando preta) */
+    section[data-testid="stFileUploader"] > div {
+        background-color: #f8f9fa !important; /* Cinza bem claro */
+        border: 2px dashed #d0d0d0 !important; /* Borda tracejada */
+        color: #262730 !important; /* Força cor do texto escura */
+    }
+
+    /* 3. Textos de instrução (Drag and drop file here...) */
+    section[data-testid="stFileUploader"] span,
+    section[data-testid="stFileUploader"] small,
+    section[data-testid="stFileUploader"] p {
         color: #262730 !important;
     }
 
-    /* 3. Área de Drop (Drag and Drop) */
-    /* Remove o fundo escuro padrão do Streamlit */
-    section[data-testid="stFileUploader"] {
+    /* 4. Botão 'Browse files' dentro da barra */
+    section[data-testid="stFileUploader"] button[kind="secondary"] {
         background-color: #ffffff !important;
-    }
-    section[data-testid="stFileUploader"] > div {
-        background-color: #ffffff !important;
-        border: 2px dashed #d0d0d0 !important; /* Borda tracejada visível */
-        border-radius: 8px;
-    }
-
-    /* 4. Botão 'Browse files' */
-    /* Precisa de cor diferente para não sumir no fundo branco */
-    div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #e9ecef !important; /* Fundo cinza claro */
-        color: #000000 !important;
+        color: #262730 !important;
         border: 1px solid #ced4da !important;
-        font-weight: 600 !important;
     }
 
-    /* 5. Arquivo Carregado (Item da lista) */
+    /* 5. Item do Arquivo Carregado (A pílula que aparece depois) */
     div[data-testid="stFileUploader"] div[role="listitem"] {
-        background-color: #ffffff !important;
+        background-color: #ffffff !important; /* Fundo branco */
         border: 1px solid #e0e0e0 !important;
-        border-radius: 6px;
-        margin-top: 10px;
+        color: #262730 !important;
     }
     
-    /* Nome do arquivo carregado (Negrito e Preto) */
-    div[data-testid="stFileUploader"] .uploadedFileName {
-        color: #000000 !important;
-        font-weight: 700 !important;
-        background-color: transparent !important;
-    }
-    
-    /* Ícone X (Remover) */
-    div[data-testid="stFileUploader"] div[role="listitem"] button {
-        background-color: transparent !important;
-        color: #000000 !important;
-        border: none !important;
+    /* Nome do arquivo e ícones dentro do item carregado */
+    div[data-testid="stFileUploader"] div[role="listitem"] * {
+        color: #262730 !important;
+        fill: #262730 !important; /* Para o ícone X */
     }
 
     /* ============================================================ */
-    /* FIM DA CORREÇÃO DO UPLOADER                                  */
+    /* FIM DA CORREÇÃO                                              */
     /* ============================================================ */
 
-    /* --- BOTÕES GERAIS (Download, Calcular) --- */
+    /* --- BOTÕES GERAIS (Calcular, Download) --- */
     div.stButton > button,
     button[data-testid="baseButton-secondary"],
     button[data-testid="baseButton-primary"] {
@@ -99,14 +80,14 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
     }
     
-    /* Exceção: Botão dentro do Uploader não deve ser azul */
-    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {
-        background-color: #e9ecef !important;
-        color: #000000 !important;
+    /* Exceção: Botão DENTRO do Uploader não deve ser azul (reforço) */
+    section[data-testid="stFileUploader"] button[kind="secondary"] {
+        background-color: #ffffff !important;
+        color: #262730 !important;
         box-shadow: none !important;
     }
 
-    /* --- BOTÃO DOWNLOAD --- */
+    /* --- BOTÃO DOWNLOAD (Área de Resultados) --- */
     div[data-testid="stDownloadButton"] { margin-top: 2px; }
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
