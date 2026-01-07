@@ -57,30 +57,33 @@ st.markdown("""
     }
 
     /* ============================================================ */
-    /* ESTILOS DE MÉTRICAS (FONTE MAIS FINA)                        */
+    /* ESTILOS DE MÉTRICAS                                          */
     /* ============================================================ */
+    /* Box padrão (transparente) */
     .custom-metric-box {
         background-color: transparent;
         padding: 0px;
     }
+    
+    /* NOVO: Box com destaque sutil (para Diferença) */
+    .highlight-metric-box {
+        background-color: #f8f9fa !important; /* Fundo cinza muito sutil */
+        border-radius: 10px !important;      /* Bordas arredondadas */
+        padding: 10px !important;            /* Padding interno */
+    }
+
     .custom-metric-label {
         font-size: 14px; font-weight: 500; color: #262730; margin-bottom: 4px;
     }
     .custom-metric-value {
         font-size: 24px; 
-        font-weight: 600; /* Padrão (Negrito) para V. Presente */
+        font-weight: 600; /* Padrão (Negrito) */
         color: #0030B9; 
     }
     
-    /* Classe para Azul Escuro (V. Presente) */
-    .value-dark-blue {
-        color: #001074 !important; 
-    }
-    
-    /* NOVA CLASSE: Fonte mais fina (Regular - 400) */
-    .value-regular {
-        font-weight: 400 !important;
-    }
+    /* Cores e Pesos de Fonte */
+    .value-dark-blue { color: #001074 !important; }
+    .value-regular { font-weight: 400 !important; }
 
     /* ============================================================ */
     /* OUTROS ESTILOS GERAIS                                        */
@@ -400,11 +403,14 @@ def make_html_table(df, idx_col_name=None):
 def fmt_brl_metric(v):
     return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-def make_metric_card(label, value, color_class=""):
+# Função para criar card de métrica HTML ATUALIZADA
+def make_metric_card(label, value, value_color_class="", box_class="custom-metric-box"):
+    # Se box_class for a padrão, não adiciona padding extra. 
+    # Se for a de highlight, ela já tem padding no CSS.
     return f"""
-    <div class="custom-metric-box">
+    <div class="{box_class}">
         <div class="custom-metric-label">{label}</div>
-        <div class="custom-metric-value {color_class}">{value}</div>
+        <div class="custom-metric-value {value_color_class}">{value}</div>
     </div>
     """
 
@@ -526,7 +532,8 @@ if st.session_state.processed_data:
         m0.markdown(make_metric_card("V. Presente", fmt_brl_metric(tot_val), "value-dark-blue"), unsafe_allow_html=True)
         m1.markdown(make_metric_card("Original", fmt_brl_metric(tot_orn), "value-regular"), unsafe_allow_html=True)
         m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cn), "value-regular"), unsafe_allow_html=True)
-        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif), "value-regular"), unsafe_allow_html=True)
+        # APLICANDO O BOX DE DESTAQUE NA DIFERENÇA
+        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif), "value-regular", "highlight-metric-box"), unsafe_allow_html=True)
         
     with colB:
         st.info("⏰ **PDD Vencido** (Atraso)")
@@ -534,7 +541,8 @@ if st.session_state.processed_data:
         dif_v = tot_orv - tot_cv
         m1.markdown(make_metric_card("Original", fmt_brl_metric(tot_orv), "value-regular"), unsafe_allow_html=True)
         m2.markdown(make_metric_card("Calculado", fmt_brl_metric(tot_cv), "value-regular"), unsafe_allow_html=True)
-        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif_v), "value-regular"), unsafe_allow_html=True)
+        # APLICANDO O BOX DE DESTAQUE NA DIFERENÇA
+        m3.markdown(make_metric_card("Diferença", fmt_brl_metric(dif_v), "value-regular", "highlight-metric-box"), unsafe_allow_html=True)
 
     st.markdown('<div class="spacer-lg"></div>', unsafe_allow_html=True)
 
