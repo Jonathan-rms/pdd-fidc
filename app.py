@@ -6,7 +6,7 @@ import time
 import xlsxwriter
 from xlsxwriter.utility import xl_col_to_name
 
-# --- 1. CONFIGURAÇÃO VISUAL & CORREÇÃO DE TEMA (FORÇADA) ---
+# --- 1. CONFIGURAÇÃO VISUAL & CORREÇÃO DE TEMA (MODO CLARO FORÇADO) ---
 st.set_page_config(
     page_title="Validação PDD",
     page_icon="🔷",
@@ -14,15 +14,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS SUPER FORÇADO PARA MODO CLARO
+# CSS NUCLEAR PARA FORÇAR MODO CLARO
 st.markdown("""
 <style>
-    /* 1. COMANDO MESTRE: Avisa o navegador que este site é LIGHT */
+    /* 1. Forçar esquema de cor no navegador */
     :root {
         color-scheme: light;
+        --background-color: #ffffff;
+        --secondary-background-color: #f0f2f6;
+        --text-color: #000000;
+        --primary-color: #0030B9;
     }
 
-    /* 2. FORÇAR FUNDO E TEXTO GERAL */
+    /* 2. Forçar fundo e texto do App */
     [data-testid="stAppViewContainer"] {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -31,15 +35,24 @@ st.markdown("""
         background-color: rgba(255, 255, 255, 0.0) !important;
     }
     
-    /* 3. CORRIGIR TEXTOS GERAIS (Evita branco no branco) */
-    p, div, span, label, h1, h2, h3, h4, h5, h6, li {
-        color: #0d0d0d !important;
+    /* 3. CORRIGIR TABELA (Dataframe) - O ponto crítico */
+    [data-testid="stDataFrame"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e0e0e0;
+    }
+    [data-testid="stDataFrame"] div[role="grid"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        --gdg-bg-color: #ffffff !important;
+        --gdg-text-color: #000000 !important;
+    }
+    /* Cabeçalho da tabela */
+    [data-testid="stDataFrame"] th {
+        background-color: #e8f0fe !important;
+        color: #0030B9 !important;
     }
     
-    /* Títulos específicos em Azul */
-    h1, h2, h3 { color: #0030B9 !important; }
-
-    /* 4. EXPANDER (A caixa de regras que ficou preta) */
+    /* 4. EXPANDER (Caixa de regras) */
     .streamlit-expanderHeader {
         background-color: #f8f9fa !important;
         color: #000000 !important;
@@ -52,52 +65,23 @@ st.markdown("""
         border-top: none !important;
     }
 
-    /* 5. DATAFRAME / TABELA (Forçar fundo claro) */
-    [data-testid="stDataFrame"] {
-        background-color: #ffffff !important;
-        border: 1px solid #e0e0e0;
-    }
-    /* Tenta forçar cores internas da tabela caso seja HTML */
-    [data-testid="stDataFrame"] div {
-        color: #000000 !important;
-    }
+    /* 5. GERAIS */
+    h1, h2, h3, p, div, span, label, li { color: #0d0d0d !important; }
+    h1, h2, h3 { color: #0030B9 !important; }
+    
+    /* Barra de Progresso e Métricas */
+    .stProgress > div > div > div > div { background-color: #0030B9 !important; }
+    .stProgress > div > div { background-color: #e0e0e0 !important; }
+    div[data-testid="stMetricValue"] { color: #001074 !important; }
+    div[data-testid="stMetricLabel"] { color: #333333 !important; }
 
-    /* 6. INPUTS E UPLOAD (Caixas de texto e upload) */
+    /* Input de arquivo */
     [data-testid="stFileUploader"] {
-        background-color: #f8f9fa !important;
-        border-radius: 10px;
-        padding: 10px;
+        background-color: #f8f9fa !important; 
+        border: 1px solid #ddd;
+        border-radius: 8px;
     }
-    [data-testid="stFileUploader"] section {
-        background-color: #ffffff !important;
-    }
-    [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] small {
-        color: #333333 !important;
-    }
-
-    /* 7. BARRA DE PROGRESSO */
-    .stProgress > div > div > div > div { 
-        background-color: #0030B9 !important; 
-    }
-    /* Fundo da barra de progresso */
-    .stProgress > div > div {
-        background-color: #e0e0e0 !important;
-    }
-
-    /* 8. MÉTRICAS */
-    div[data-testid="stMetricValue"] { font-size: 24px; color: #001074 !important; }
-    div[data-testid="stMetricLabel"] { font-size: 14px; font-weight: bold; color: #333333 !important; }
-
-    /* 9. BOTÕES */
-    div.stButton > button {
-        background-color: #0030B9 !important;
-        color: white !important;
-        border: none;
-    }
-    div.stButton > button:hover {
-        background-color: #001074 !important;
-        color: white !important;
-    }
+    [data-testid="stFileUploader"] section { background-color: #ffffff !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,49 +92,55 @@ REGRAS = pd.DataFrame({
     '% Venc': [1.0, 0.995, 0.99, 0.97, 0.90, 0.70, 0.50, 0.30, 0.0]
 })
 
-# --- 3. PROCESSAMENTO ---
+# --- 3. PROCESSAMENTO OTIMIZADO ---
 
 @st.cache_data(show_spinner=False)
 def ler_e_limpar(file):
     try:
+        # Leitura rápida sem conversões iniciais
         if file.name.lower().endswith('.csv'):
             try: df = pd.read_csv(file)
             except: 
                 file.seek(0)
                 df = pd.read_csv(file, encoding='latin1', sep=';')
-        else: df = pd.read_excel(file)
+        else: 
+            # Otimização: ler apenas dados, sem estilos
+            df = pd.read_excel(file)
         
         df = df.dropna(how='all')
         
-        possible_names = ['notapdd', 'classificação', 'classificacao', 'rating']
-        col_rating = next((c for c in df.columns if any(x in c.lower() for x in possible_names)), None)
+        # Filtros iniciais rápidos
+        cols_lower = [c.lower() for c in df.columns]
         
+        # Identificar colunas chaves
+        col_rating = next((c for c, cl in zip(df.columns, cols_lower) if any(x in cl for x in ['notapdd', 'classificação', 'classificacao', 'rating'])), None)
         if col_rating:
             df = df.dropna(subset=[col_rating])
-            s_rating = df[col_rating].astype(str).str.strip().str.lower()
-            df = df[~s_rating.isin(['nan', 'null', '', 'total', 'soma'])]
+            # Vetorização: converter e filtrar em massa
+            df = df[~df[col_rating].astype(str).str.strip().str.lower().isin(['nan', 'null', '', 'total', 'soma'])]
 
-        col_val_name = next((c for c in df.columns if any(x in c.lower() for x in ['valorpresente', 'valoratual'])), None)
-        if col_val_name:
-             df = df.dropna(subset=[col_val_name])
+        col_val = next((c for c, cl in zip(df.columns, cols_lower) if any(x in cl for x in ['valorpresente', 'valoratual'])), None)
+        if col_val:
+             df = df.dropna(subset=[col_val])
 
-        cols_txt = ['NotaPDD', 'Classificação', 'Rating']
+        # LIMPEZA OTIMIZADA (Não iterar todas as colunas)
+        # 1. Datas
+        date_cols = [c for c, cl in zip(df.columns, cols_lower) if any(x in cl for x in ['data', 'vencimento', 'posicao'])]
+        for c in date_cols:
+            df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce').dt.normalize()
+
+        # 2. Valores Monetários (Apenas colunas que parecem dinheiro e são objeto)
+        money_cols = [c for c, cl in zip(df.columns, cols_lower) if any(x in cl for x in ['valor', 'pdd', 'r$']) and df[c].dtype == 'object']
+        if money_cols:
+            # Regex vetorizado é muito mais rápido que loop str.replace
+            df[money_cols] = df[money_cols].astype(str).replace(r'[R$\.]', '', regex=True).replace(',', '.', regex=True)
+            df[money_cols] = df[money_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
         
-        for c in df.columns:
-            if df[c].dtype == 'object': 
-                df[c] = df[c].astype(str).str.strip()
-            
-            c_low = c.lower()
-            if any(x in c_low for x in ['valor', 'pdd', 'r$']) and not any(p in c for p in cols_txt):
-                if df[c].dtype == 'object':
-                    df[c] = df[c].astype(str).str.replace('R$', '', regex=False)\
-                                             .str.replace('.', '', regex=False)\
-                                             .str.replace(',', '.')
-                df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
-            
-            if any(x in c_low for x in ['data', 'vencimento', 'posicao']):
-                df[c] = pd.to_datetime(df[c], dayfirst=True, errors='coerce').dt.normalize()
-        
+        # 3. Trim em strings restantes
+        obj_cols = df.select_dtypes(include=['object']).columns
+        if len(obj_cols) > 0:
+            df[obj_cols] = df[obj_cols].apply(lambda x: x.str.strip())
+
         df = df.reset_index(drop=True)
         return df, None
     except Exception as e: return None, str(e)
@@ -158,6 +148,7 @@ def ler_e_limpar(file):
 def calcular_dataframe(df, idx):
     df_calc = df.copy()
     
+    # Mapeamento rápido com dicionários
     tx_n = dict(zip(REGRAS['Rating'], REGRAS['% Nota']))
     tx_v = dict(zip(REGRAS['Rating'], REGRAS['% Venc']))
     
@@ -168,14 +159,21 @@ def calcular_dataframe(df, idx):
     t_v = rat_col.map(tx_v).fillna(0)
     
     da, dv, dp = df_calc.iloc[:, idx['aq']], df_calc.iloc[:, idx['venc']], df_calc.iloc[:, idx['pos']]
+    
+    # Cálculos vetorizados (NumPy)
     tot = (dv - da).dt.days.replace(0, 1)
     pas = (dp - da).dt.days
     atr = (dp - dv).dt.days
     
     pr_n_tempo = np.clip(pas/tot, 0, 1)
-    col_rating_name = df_calc.columns[idx['rat']]
-    pr_n = np.where(df_calc[col_rating_name].astype(str).str.upper() == 'H', 1.0, pr_n_tempo)
-    pr_v = np.select([(atr<=20), (atr>=60)], [0.0, 1.0], default=(atr-20)/40).clip(0, 1)
+    # Verifica H de forma segura
+    is_h = df_calc.columns[idx['rat']]
+    pr_n = np.where(df_calc[is_h].astype(str).str.upper() == 'H', 1.0, pr_n_tempo)
+    
+    # Lógica de atraso otimizada
+    condlist = [atr <= 20, atr >= 60]
+    choicelist = [0.0, 1.0]
+    pr_v = np.select(condlist, choicelist, default=(atr-20)/40).clip(0, 1)
 
     taxa_final_nota = np.where(pr_n == 0, t_n, t_n * pr_n)
     df_calc['CALC_N'] = val_col * taxa_final_nota
@@ -185,9 +183,11 @@ def calcular_dataframe(df, idx):
 
 def gerar_excel_final(df_original, calc_data):
     output = io.BytesIO()
+    # Engine XlsxWriter é a mais rápida
     wb = pd.ExcelWriter(output, engine='xlsxwriter')
     bk = wb.book
     
+    # Formatos
     base_fmt = {'font_name': 'Montserrat', 'font_size': 9}
     f_head = bk.add_format({**base_fmt, 'bold': True, 'bg_color': '#0030B9', 'font_color': 'white', 'align': 'center', 'valign': 'vcenter'})
     f_calc = bk.add_format({**base_fmt, 'bold': True, 'bg_color': '#E8E8E8', 'font_color': 'black', 'align': 'center', 'text_wrap': True})
@@ -201,7 +201,7 @@ def gerar_excel_final(df_original, calc_data):
     f_tot_money = bk.add_format({**base_fmt, 'bold': True, 'num_format': '#,##0.00', 'top': 1, 'bottom': 1})
     f_tot_sep = bk.add_format({**base_fmt, 'bg_color': 'white'})
 
-    # 1. ANALÍTICO
+    # 1. DADOS ORIGINAIS (Dump rápido)
     sh_an = 'Analítico Detalhado'
     cols_temp = ['CALC_N', 'CALC_V', 'Tx_N', 'Tx_V']
     df_clean = df_original.drop(columns=[c for c in cols_temp if c in df_original.columns], errors='ignore')
@@ -222,13 +222,10 @@ def gerar_excel_final(df_original, calc_data):
     sh_re = 'Regras_Sistema'
     REGRAS.to_excel(wb, sheet_name=sh_re, index=False)
     ws_re = wb.sheets[sh_re]
-    ws_re.hide_gridlines(2)
-    for i, col in enumerate(REGRAS.columns):
-        ws_re.write(0, i, col, f_head)
-        ws_re.set_column(i, i, 15, f_pct if '%' in col else f_text)
     ws_re.hide()
 
-    # 3. FÓRMULAS
+    # 3. FÓRMULAS (OTIMIZAÇÃO: DYNAMIC ARRAYS / SPILL)
+    # Escreve a fórmula uma única vez, o Excel propaga.
     L = calc_data['L']
     c_idx = {}
     curr = len(df_clean.columns)
@@ -261,51 +258,50 @@ def gerar_excel_final(df_original, calc_data):
         
     def CL(name): return xl_col_to_name(c_idx[name])
     
-    total_rows = len(df_clean)
-    rows_range = range(2, total_rows + 2)
+    last_r = len(df_clean) + 1
+    rng = f"2:{last_r}" # Sufixo de intervalo (Ex: A2:A500)
     
-    f_dias_venc = [f'={L["venc"]}{r}-{L["aq"]}{r}' for r in rows_range]
-    f_dias_atr  = [f'={L["pos"]}{r}-{L["venc"]}{r}' for r in rows_range]
-    f_pct_nota  = [f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,2,0)' for r in rows_range]
-    
-    f_pr_nota = []
-    col_dias = CL("Qt. Dias Aquisição x Venc.")
-    for r in rows_range:
-        f_pr_nota.append(f'=IF({L["rat"]}{r}="H", 1, IF({col_dias}{r}=0,0,MIN(1,MAX(0,({L["pos"]}{r}-{L["aq"]}{r})/{col_dias}{r}))))')
-        
-    f_pn_final = [f'=IF({CL("% PDD Nota Pro rata")}{r}=0, {CL("% PDD Nota")}{r}, {CL("% PDD Nota")}{r}*{CL("% PDD Nota Pro rata")}{r})' for r in rows_range]
-    
-    f_pct_venc = [f'=VLOOKUP({L["rat"]}{r},Regras_Sistema!$A:$C,3,0)' for r in rows_range]
-    
-    col_atraso = CL("Qt. Dias Atraso")
-    f_pr_venc = [f'=IF({col_atraso}{r}<=20,0,IF({col_atraso}{r}>=60,1,({col_atraso}{r}-20)/40))' for r in rows_range]
-    
-    f_pv_final = [f'={CL("% PDD Vencido")}{r}*{CL("% PDD Vencido Pro rata")}{r}' for r in rows_range]
-    
-    f_val_nota = [f'={L["val"]}{r}*{CL("% PDD Nota Final")}{r}' for r in rows_range]
-    
-    orig_n_col = L['orn'] if L['orn'] else None
-    f_dif_nota = [f'=ABS({CL("PDD Nota Calc")}{r}-{orig_n_col}{r})' if orig_n_col else f'=ABS({CL("PDD Nota Calc")}{r})' for r in rows_range]
-    
-    f_val_venc = [f'={L["val"]}{r}*{CL("% PDD Vencido Final")}{r}' for r in rows_range]
-    
-    orig_v_col = L['orv'] if L['orv'] else None
-    f_dif_venc = [f'=ABS({CL("PDD Vencido Calc")}{r}-{orig_v_col}{r})' if orig_v_col else f'=ABS({CL("PDD Vencido Calc")}{r})' for r in rows_range]
+    # Helper para montar range: L['venc'] -> "D2:D500"
+    def R(col_letter): return f"{col_letter}2:{col_letter}{last_r}"
+    def RC(name): return f"{CL(name)}2:{CL(name)}{last_r}"
 
-    ws.write_column(1, c_idx["Qt. Dias Aquisição x Venc."], f_dias_venc, f_num)
-    ws.write_column(1, c_idx["Qt. Dias Atraso"], f_dias_atr, f_num)
-    ws.write_column(1, c_idx["% PDD Nota"], f_pct_nota, f_pct)
-    ws.write_column(1, c_idx["% PDD Nota Pro rata"], f_pr_nota, f_pct)
-    ws.write_column(1, c_idx["% PDD Nota Final"], f_pn_final, f_pct)
-    ws.write_column(1, c_idx["% PDD Vencido"], f_pct_venc, f_pct)
-    ws.write_column(1, c_idx["% PDD Vencido Pro rata"], f_pr_venc, f_pct)
-    ws.write_column(1, c_idx["% PDD Vencido Final"], f_pv_final, f_pct)
-    ws.write_column(1, c_idx["PDD Nota Calc"], f_val_nota, f_money)
-    ws.write_column(1, c_idx["Dif Nota"], f_dif_nota, f_money)
-    ws.write_column(1, c_idx["PDD Vencido Calc"], f_val_venc, f_money)
-    ws.write_column(1, c_idx["Dif Vencido"], f_dif_venc, f_money)
+    # Fórmulas Dinâmicas (Spill) - Muito mais rápido que loop
+    # Se o Excel for antigo, vai aparecer @ nos arrays, mas os valores estarão lá.
+    # Sintaxe: {=A2:A10 - B2:B10}
+    
+    ws.write_dynamic_array_formula(f"{CL('Qt. Dias Aquisição x Venc.')}2", f"={R(L['venc'])}-{R(L['aq'])}", f_num)
+    ws.write_dynamic_array_formula(f"{CL('Qt. Dias Atraso')}2", f"={R(L['pos'])}-{R(L['venc'])}", f_num)
+    
+    # VLOOKUP no Excel moderno aceita array no primeiro argumento
+    ws.write_dynamic_array_formula(f"{CL('% PDD Nota')}2", f"=VLOOKUP({R(L['rat'])},Regras_Sistema!$A:$C,2,0)", f_pct)
+    
+    # Pro Rata Nota (Complexa)
+    col_dias_aq = f"{CL('Qt. Dias Aquisição x Venc.')}2#" # Referência SPILL (#)
+    # Nota: Usamos intervalos explícitos para segurança onde # pode falhar em complexidade
+    frm_pr_nota = f"=IF({R(L['rat'])}=\"H\", 1, IF({RC('Qt. Dias Aquisição x Venc.')}=0,0,IF(({R(L['pos'])}-{R(L['aq'])})/{RC('Qt. Dias Aquisição x Venc.')}>1,1,IF(({R(L['pos'])}-{R(L['aq'])})/{RC('Qt. Dias Aquisição x Venc.')}<0,0,({R(L['pos'])}-{R(L['aq'])})/{RC('Qt. Dias Aquisição x Venc.')}))))"
+    ws.write_dynamic_array_formula(f"{CL('% PDD Nota Pro rata')}2", frm_pr_nota, f_pct)
+    
+    ws.write_dynamic_array_formula(f"{CL('% PDD Nota Final')}2", f"=IF({RC('% PDD Nota Pro rata')}=0, {RC('% PDD Nota')}, {RC('% PDD Nota')}*{RC('% PDD Nota Pro rata')})", f_pct)
+    
+    ws.write_dynamic_array_formula(f"{CL('% PDD Vencido')}2", f"=VLOOKUP({R(L['rat'])},Regras_Sistema!$A:$C,3,0)", f_pct)
+    
+    col_atr = RC("Qt. Dias Atraso")
+    frm_pr_venc = f"=IF({col_atr}<=20,0,IF({col_atr}>=60,1,({col_atr}-20)/40))"
+    ws.write_dynamic_array_formula(f"{CL('% PDD Vencido Pro rata')}2", frm_pr_venc, f_pct)
+    
+    ws.write_dynamic_array_formula(f"{CL('% PDD Vencido Final')}2", f"={RC('% PDD Vencido')}*{RC('% PDD Vencido Pro rata')}", f_pct)
+    
+    ws.write_dynamic_array_formula(f"{CL('PDD Nota Calc')}2", f"={R(L['val'])}*{RC('% PDD Nota Final')}", f_money)
+    
+    orig_n = R(L['orn']) if L['orn'] else 0
+    ws.write_dynamic_array_formula(f"{CL('Dif Nota')}2", f"=ABS({RC('PDD Nota Calc')}-{orig_n})", f_money)
+    
+    ws.write_dynamic_array_formula(f"{CL('PDD Vencido Calc')}2", f"={R(L['val'])}*{RC('% PDD Vencido Final')}", f_money)
+    
+    orig_v = R(L['orv']) if L['orv'] else 0
+    ws.write_dynamic_array_formula(f"{CL('Dif Vencido')}2", f"=ABS({RC('PDD Vencido Calc')}-{orig_v})", f_money)
 
-    # 4. RESUMO
+    # 4. RESUMO (Rápido)
     ws_res = bk.add_worksheet('Resumo')
     ws_res.hide_gridlines(2)
     cols_res = ["Classificação", "Valor Carteira", "", "PDD Nota (Orig.)", "PDD Nota (Calc.)", "Dif. Nota", "", "PDD Vencido (Orig.)", "PDD Vencido (Calc.)", "Dif. Vencido"]
@@ -319,24 +315,19 @@ def gerar_excel_final(df_original, calc_data):
         
     classes = sorted([str(x) for x in df_clean.iloc[:, idx['rat']].unique() if str(x) != 'nan'])
     r_idx = 1
-    
     base_sumif = f"SUMIF('{sh_an}'!${L['rat']}:${L['rat']}"
     
     for cls in classes:
         row = str(r_idx + 1)
         ws_res.write(r_idx, 0, cls, f_text)
-        
         crit = f",A{row},'{sh_an}'!"
-        
         ws_res.write_formula(r_idx, 1, f'={base_sumif}{crit}${L["val"]}:${L["val"]})', f_money)
         ws_res.write(r_idx, 2, "", f_tot_sep)
-        
         orig_n = f'={base_sumif}{crit}${L["orn"]}:${L["orn"]})' if L['orn'] else 0
         ws_res.write_formula(r_idx, 3, orig_n, f_money)
         ws_res.write_formula(r_idx, 4, f'={base_sumif}{crit}${CL("PDD Nota Calc")}:${CL("PDD Nota Calc")})', f_money)
         ws_res.write_formula(r_idx, 5, f'=D{row}-E{row}', f_money)
         ws_res.write(r_idx, 6, "", f_tot_sep)
-        
         orig_v = f'={base_sumif}{crit}${L["orv"]}:${L["orv"]})' if L['orv'] else 0
         ws_res.write_formula(r_idx, 7, orig_v, f_money)
         ws_res.write_formula(r_idx, 8, f'={base_sumif}{crit}${CL("PDD Vencido Calc")}:${CL("PDD Vencido Calc")})', f_money)
@@ -377,28 +368,32 @@ if 'exec_time' not in st.session_state:
 
 if uploaded_file:
     if st.session_state.current_file_name != uploaded_file.name:
-        
-        # --- TIMER START ---
         start_time = time.time()
         
         status_text = st.empty()
         progress_bar = st.progress(0)
         
-        status_text.text("Lendo e limpando arquivo...")
+        status_text.text("Lendo arquivo (Otimizado)...")
         df_raw, err = ler_e_limpar(uploaded_file)
         
         if err:
             st.error(err)
             st.session_state.processed_data = None
         else:
-            progress_bar.progress(20, text="Identificando colunas...")
+            progress_bar.progress(30, text="Processando dados...")
             
+            # Identificação de Colunas (usando strings minúsculas pré-processadas)
+            cols_clean = [c.lower().replace('_', '') for c in df_raw.columns]
             def get_col(keys):
-                return next((df_raw.columns.get_loc(c) for c in df_raw.columns if any(k in c.lower().replace('_','') for k in keys)), None)
+                for k in keys:
+                    for i, c in enumerate(cols_clean):
+                        if k in c: return i
+                return None
             
             idx = {
                 'aq': get_col(['aquisicao']), 'venc': get_col(['vencimento']), 'pos': get_col(['posicao']),
-                'rat': get_col(['notapdd', 'classificacao']), 'val': get_col(['valorpresente', 'valoratual']),
+                'rat': get_col(['notapdd', 'classificacao', 'rating']), 
+                'val': get_col(['valorpresente', 'valoratual']),
                 'orn': get_col(['pddnota']), 'orv': get_col(['pddvencido'])
             }
             
@@ -406,17 +401,14 @@ if uploaded_file:
                 st.error("Colunas obrigatórias não identificadas.")
                 st.session_state.processed_data = None
             else:
-                status_text.text("Calculando cenários...")
-                progress_bar.progress(40)
                 df_calc = calcular_dataframe(df_raw, idx)
                 
-                status_text.text("Otimizando saída Excel...")
+                status_text.text("Gerando Excel (Instantâneo)...")
                 progress_bar.progress(60)
                 
                 calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
                 xls_bytes = gerar_excel_final(df_raw, calc_data)
                 
-                # --- TIMER END ---
                 end_time = time.time()
                 st.session_state.exec_time = end_time - start_time
                 
@@ -433,7 +425,6 @@ if st.session_state.processed_data:
     df = data['df_calc']
     idx = data['idx']
     
-    # Exibir Botão e Tempo
     with c2:
         st.markdown('<div style="height: 2px"></div>', unsafe_allow_html=True)
         st.download_button(
@@ -442,12 +433,12 @@ if st.session_state.processed_data:
             file_name="PDD_FIDC.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        # MOSTRAR O TEMPO DE PROCESSAMENTO
         if st.session_state.exec_time > 0:
             st.info(f"⏱️ Tempo: **{st.session_state.exec_time:.2f}s**")
 
     st.divider()
     
+    # Resumo visual
     tot_val = df.iloc[:, idx['val']].sum()
     tot_orn = df.iloc[:, idx['orn']].sum() if idx['orn'] else 0.0
     tot_orv = df.iloc[:, idx['orv']].sum() if idx['orv'] else 0.0
@@ -470,16 +461,18 @@ if st.session_state.processed_data:
         m2.metric("Calculado", f"R$ {tot_cv:,.2f}")
         m3.metric("Diferença", f"R$ {tot_orv - tot_cv:,.2f}", delta=f"{tot_orv - tot_cv:,.2f}", delta_color="normal")
 
-    st.info("**Detalhamento** (Por rating)")
+    st.markdown("### Detalhamento (Por rating)")
     
     rat_name = df.columns[idx['rat']]
-    df_grp = df.groupby(rat_name).agg({
-        df.columns[idx['val']]: 'sum',
-        df.columns[idx['orn']]: 'sum' if idx['orn'] else lambda x: 0,
-        'CALC_N': 'sum',
-        df.columns[idx['orv']]: 'sum' if idx['orv'] else lambda x: 0,
-        'CALC_V': 'sum'
-    })
+    # Agrupamento otimizado
+    df_grp = df.groupby(rat_name)[[df.columns[idx['val']], 'CALC_N', 'CALC_V']].sum()
+    if idx['orn']: df_grp['Orig_N'] = df.groupby(rat_name)[df.columns[idx['orn']]].sum()
+    else: df_grp['Orig_N'] = 0
+    if idx['orv']: df_grp['Orig_V'] = df.groupby(rat_name)[df.columns[idx['orv']]].sum()
+    else: df_grp['Orig_V'] = 0
+    
+    # Reordenar colunas
+    df_grp = df_grp[[df.columns[idx['val']], 'Orig_N', 'CALC_N', 'Orig_V', 'CALC_V']]
     
     order = {k:v for v,k in enumerate(REGRAS['Rating'])}
     df_grp['sort'] = df_grp.index.map(order).fillna(99)
@@ -492,7 +485,6 @@ if st.session_state.processed_data:
     df_show = df_grp.applymap(fmt)
     df_show.columns = ["Valor Presente", "PDD Nota (Orig)", "PDD Nota (Calc)", "PDD Venc (Orig)", "PDD Venc (Calc)"]
     
-    # Renderiza a tabela
     st.dataframe(df_show, use_container_width=True)
     
     with st.expander("📚 Ver Regras de Cálculo"):
@@ -503,11 +495,6 @@ if st.session_state.processed_data:
         with rc2:
             st.write("**Lógica de Aplicação**")
             st.success("""
-            **1. PDD Nota (Pro Rata):**
-            > (Data Posição - Data Aquisição) / (Vencimento - Aquisição)
-            
-            **2. PDD Vencido (Linear):**
-            * **≤ 20 dias:** 0%
-            * **21 a 59 dias:** (Dias Atraso - 20) / 40
-            * **≥ 60 dias:** 100%
+            **1. PDD Nota (Pro Rata):** (Posição - Aquisição) / (Vencimento - Aquisição)
+            **2. PDD Vencido (Linear):** ≤20d (0%), 21-59d (Proporcional), ≥60d (100%)
             """)
