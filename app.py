@@ -22,46 +22,50 @@ st.markdown("""
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
     /* ============================================================ */
-    /* CORREÇÃO VISUAL DO UPLOADER (ELIMINAR BARRA PRETA)           */
+    /* CORREÇÃO DEFINITIVA DO UPLOADER (Igual ao seu código antigo) */
     /* ============================================================ */
     
-    /* 1. Área externa do Uploader */
+    /* 1. O Container Principal */
     div[data-testid="stFileUploader"] {
-        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 16px;
+        background-color: #ffffff;
     }
 
-    /* 2. Área de Drag & Drop (A barra que estava ficando preta) */
-    section[data-testid="stFileUploader"] > div {
-        background-color: #f8f9fa !important; /* Cinza bem claro */
-        border: 2px dashed #d0d0d0 !important; /* Borda tracejada */
-        color: #262730 !important; /* Força cor do texto escura */
-    }
-
-    /* 3. Textos de instrução (Drag and drop file here...) */
-    section[data-testid="stFileUploader"] span,
-    section[data-testid="stFileUploader"] small,
-    section[data-testid="stFileUploader"] p {
-        color: #262730 !important;
-    }
-
-    /* 4. Botão 'Browse files' dentro da barra */
-    section[data-testid="stFileUploader"] button[kind="secondary"] {
+    /* 2. REGRA MESTRA (A que faz funcionar): Força TUDO a ser branco e texto escuro */
+    /* Isso remove a barra preta teimosa */
+    div[data-testid="stFileUploader"] * {
         background-color: #ffffff !important;
         color: #262730 !important;
-        border: 1px solid #ced4da !important;
     }
 
-    /* 5. Item do Arquivo Carregado (A pílula que aparece depois) */
-    div[data-testid="stFileUploader"] div[role="listitem"] {
-        background-color: #ffffff !important; /* Fundo branco */
-        border: 1px solid #e0e0e0 !important;
+    /* 3. Área de Drop (Borda tracejada) */
+    section[data-testid="stFileUploader"] > div {
+        border: 2px dashed #d0d0d0 !important;
+        border-radius: 6px;
+    }
+
+    /* 4. Botão 'Browse files' (Para não ficar invisível no fundo branco) */
+    /* Precisamos sobrescrever a regra mestra apenas aqui */
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        background-color: #e9ecef !important; /* Cinza claro */
+        border: 1px solid #ced4da !important;
         color: #262730 !important;
+        font-weight: 600 !important;
+    }
+
+    /* 5. Arquivo Carregado (Item da lista) */
+    /* Damos um fundo levemente cinza para destacar o arquivo da lista */
+    div[data-testid="stFileUploader"] div[role="listitem"] {
+        background-color: #f8f9fa !important;
+        border: 1px solid #e0e0e0 !important;
     }
     
-    /* Nome do arquivo e ícones dentro do item carregado */
-    div[data-testid="stFileUploader"] div[role="listitem"] * {
-        color: #262730 !important;
-        fill: #262730 !important; /* Para o ícone X */
+    /* O ícone X (fechar) precisa ser visível */
+    div[data-testid="stFileUploader"] svg, 
+    div[data-testid="stFileUploader"] svg path {
+        fill: #262730 !important;
     }
 
     /* ============================================================ */
@@ -74,20 +78,18 @@ st.markdown("""
     button[data-testid="baseButton-primary"] {
         background-color: #0030B9 !important;
         border: none !important;
-        color: white !important;
+        color: white !important; /* Texto branco */
         border-radius: 8px !important;
         font-weight: 600 !important;
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
     }
     
-    /* Exceção: Botão DENTRO do Uploader não deve ser azul (reforço) */
-    section[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #ffffff !important;
-        color: #262730 !important;
-        box-shadow: none !important;
+    /* IMPORTANTE: Garantir que o botão Browse NÃO pegue o estilo azul */
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        color: #262730 !important; /* Volta para cinza escuro */
     }
 
-    /* --- BOTÃO DOWNLOAD (Área de Resultados) --- */
+    /* --- BOTÃO DOWNLOAD --- */
     div[data-testid="stDownloadButton"] { margin-top: 2px; }
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
