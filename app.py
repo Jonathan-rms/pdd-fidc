@@ -42,15 +42,13 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
     }
 
-    /* --- BOTÃO DOWNLOAD ESPECÍFICO (Texto Cinza Claro e Alinhamento) --- */
-    div[data-testid="stDownloadButton"] {
-        margin-top: 2px; /* Ajuste fino de alinhamento com a caixa de tempo */
-    }
+    /* --- BOTÃO DOWNLOAD --- */
+    div[data-testid="stDownloadButton"] { margin-top: 2px; }
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
-        color: #e0e0e0 !important; /* Texto cinza claro */
+        color: #f0f0f0 !important; /* Cinza claro */
         width: 100%;
-        height: 50px !important; /* Forçar mesma altura da caixa de tempo */
+        height: 50px !important;
     }
     div[data-testid="stDownloadButton"] > button:hover {
         color: #ffffff !important;
@@ -62,17 +60,22 @@ st.markdown("""
         border-left: 4px solid #0030B9; border-radius: 6px;
     }
     
-    /* --- METRICS --- */
+    /* --- METRICS (Ajuste de Cor dos Labels) --- */
     div[data-testid="stMetricValue"] {
         font-size: 24px !important;
         color: #0030B9 !important;
         font-weight: 600 !important;
     }
-    div[data-testid="stMetricLabel"] {
-        font-size: 14px; font-weight: 500; color: #262730;
+    /* CORRIGIDO: Forçar cor cinza escuro nos labels para não ficar branco */
+    div[data-testid="stMetricLabel"], 
+    div[data-testid="stMetricLabel"] > div,
+    label[data-testid="stMetricLabel"] {
+        font-size: 14px !important; 
+        font-weight: 600 !important; 
+        color: #333333 !important; /* Cinza escuro */
     }
 
-    /* --- TABELAS HTML (Detalhe e Regras) --- */
+    /* --- TABELAS HTML --- */
     .styled-table {
         width: 100%;
         border-collapse: separate; 
@@ -105,46 +108,36 @@ st.markdown("""
         color: #0030B9;
     }
     
-    /* --- CONTAINER DE REGRAS (Fundo Cinza) --- */
-    .rules-container {
-        background-color: #f8f9fa;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 20px;
-        margin-top: 20px;
+    /* --- CARD LÓGICA (Clean) --- */
+    .logic-box {
+        background: white;
+        padding: 10px 0; /* Remove padding lateral para alinhar com tabela */
+        border-radius: 0;
+        border: none;
     }
-    .rules-header {
+    .formula-box {
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85em;
+        color: #333;
+        border: 1px solid #e0e0e0;
+        margin-top: 5px;
+        display: block;
+        width: fit-content;
+    }
+    
+    .section-title {
         color: #0030B9;
         font-size: 1.1rem;
         font-weight: 600;
         margin-bottom: 15px;
-        border-bottom: 1px solid #e0e0e0;
-        padding-bottom: 8px;
-    }
-    
-    /* --- CARD LÓGICA --- */
-    .logic-box {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #eee;
-    }
-    .formula-box {
-        background: #f0f2f6;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9em;
-        color: #333;
-        border: 1px solid #ddd;
-        margin-top: 5px;
-        display: block;
     }
     
     /* Espaçadores */
     .spacer-sm { height: 10px; }
     .spacer-md { height: 30px; }
-    .spacer-lg { height: 50px; }
     
 </style>
 """, unsafe_allow_html=True)
@@ -272,10 +265,7 @@ def gerar_excel_final(df_original, calc_data):
         ws_re.set_column(i, i, 15, f_pct if '%' in col else f_text)
     ws_re.hide()
 
-    # 3. FÓRMULAS E RESUMO (MANTIDO IGUAL AO ANTERIOR PARA ECONOMIZAR ESPAÇO NO CÓDIGO)
-    # ... A lógica de fórmulas e resumo permanece idêntica à versão anterior ...
-    # Reimplementando apenas o essencial para o código rodar:
-    
+    # 3. FÓRMULAS
     L = calc_data['L']
     c_idx = {}
     curr = len(df_clean.columns)
@@ -356,6 +346,7 @@ def gerar_excel_final(df_original, calc_data):
             write(row, col_pdd_venc_calc, f'={L["val"]}{r}*{CL_pdd_venc_final}{r}', f_money)
             write(row, col_dif_venc, f'=ABS({CL_pdd_venc_calc}{r}-{orig_v_base}{r})', f_money)
 
+    # 4. RESUMO
     ws_res = bk.add_worksheet('Resumo')
     ws_res.hide_gridlines(2)
     cols_res = ["Classificação", "Valor Carteira", "", "PDD Nota (Orig.)", "PDD Nota (Calc.)", "Dif. Nota", "", "PDD Vencido (Orig.)", "PDD Vencido (Calc.)", "Dif. Vencido"]
@@ -414,7 +405,6 @@ def make_html_table(df, idx_col_name=None):
     return html
 
 def fmt_brl_metric(v):
-    # Formata R$ 1.000,00 para os cards
     return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # --- 5. FRONTEND ---
@@ -443,7 +433,6 @@ if uploaded_file:
             status_text = st.empty()
             progress_bar = st.progress(0)
         
-        # Leitura
         status_text.text("Lendo...")
         df_raw, err = ler_e_limpar(uploaded_file)
         etapa_leitura = time.time() - start_time
@@ -452,7 +441,6 @@ if uploaded_file:
             st.error(err)
             st.session_state.processed_data = None
         else:
-            # Colunas
             progress_bar.progress(20, text="Mapeando colunas...")
             def get_col(keys):
                 return next((df_raw.columns.get_loc(c) for c in df_raw.columns if any(k in c.lower().replace('_','') for k in keys)), None)
@@ -467,13 +455,11 @@ if uploaded_file:
                 st.error("Colunas obrigatórias não identificadas.")
                 st.session_state.processed_data = None
             else:
-                # Cálculo
                 s_calc = time.time()
                 progress_bar.progress(40, text="Calculando...")
                 df_calc = calcular_dataframe(df_raw, idx)
                 etapa_calculo = time.time() - s_calc
                 
-                # Excel
                 s_excel = time.time()
                 progress_bar.progress(60, text="Gerando Excel...")
                 calc_data = {'idx': idx, 'L': {k: xl_col_to_name(v) if v is not None else None for k,v in idx.items()}}
@@ -500,7 +486,6 @@ if st.session_state.processed_data:
     df = data['df_calc']
     idx = data['idx']
     
-    # Layout de Tempo e Download alinhados
     with upload_container:
         c1, c2 = st.columns([3, 1])
         with c1:
@@ -531,7 +516,6 @@ if st.session_state.processed_data:
     tot_cn = df['CALC_N'].sum()
     tot_cv = df['CALC_V'].sum()
     
-    # Métricas
     colA, colB = st.columns(2)
     with colA:
         st.info("📋 **PDD Nota** (Risco Sacado)")
@@ -550,7 +534,6 @@ if st.session_state.processed_data:
         dif_v = tot_orv - tot_cv
         m3.metric("Diferença", fmt_brl_metric(dif_v), delta=fmt_brl_metric(dif_v), delta_color="normal")
 
-    # Espaçamento solicitado
     st.markdown('<div class="spacer-md"></div>', unsafe_allow_html=True)
 
     st.info("**Detalhamento** (Por rating)")
@@ -569,7 +552,6 @@ if st.session_state.processed_data:
     df_grp = df_grp.sort_values('sort').drop('sort', axis=1)
     df_grp.loc['TOTAL'] = df_grp.sum()
     
-    # Formatação BR para Tabela
     def fmt(x): 
         if pd.isna(x): return "R$ 0,00"
         return f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -579,40 +561,37 @@ if st.session_state.processed_data:
     
     st.markdown(make_html_table(df_show, idx_col_name="Rating"), unsafe_allow_html=True)
     
-    # Regras e Explicação (Fundo Cinza e Sem Expander)
-    st.markdown("""
-    <div class="rules-container">
-        <div style="display:flex; gap:20px; flex-wrap:wrap;">
-            <div style="flex:1; min-width:300px;">
-                <div class="rules-header">📚 Regras de Cálculo</div>
-    """, unsafe_allow_html=True)
-    
-    regras_fmt = REGRAS.copy()
-    regras_fmt['% Nota'] = regras_fmt['% Nota'].apply(lambda x: f"{x:.2%}")
-    regras_fmt['% Venc'] = regras_fmt['% Venc'].apply(lambda x: f"{x:.2%}")
-    st.markdown(make_html_table(regras_fmt.set_index('Rating'), idx_col_name="Rating"), unsafe_allow_html=True)
+    st.markdown('<div class="spacer-md"></div>', unsafe_allow_html=True)
 
-    st.markdown("""
-            </div>
-            <div style="flex:1; min-width:300px;">
-                <div class="rules-header">🧠 Lógica de Aplicação</div>
-                <div class="logic-box">
-                    <strong style="color:#0030B9">1. PDD Nota (Risco Sacado)</strong>
-                    <p style="font-size:0.9em; margin:5px 0">Cálculo <i>Pro Rata Temporis</i> linear.</p>
-                    <span class="formula-box">
-                        (Data Posição - Aquisição) ÷ (Vencimento - Aquisição)
-                    </span>
-                    <br>
-                    <strong style="color:#0030B9">2. PDD Vencido (Atraso)</strong>
-                    <ul style="font-size:0.9em; padding-left:20px; color:#444; margin-top:5px; line-height:1.6;">
-                        <li><b>≤ 20 dias:</b> 0%</li>
-                        <li><b>21 a 59 dias:</b> Escalonamento linear<br>
-                            <span style="font-size:0.85em; color:#666; background:#f4f4f4; padding:2px 6px; border-radius:4px;">(Dias Atraso - 20) ÷ 40</span>
-                        </li>
-                        <li><b>≥ 60 dias:</b> 100% de provisionamento</li>
-                    </ul>
-                </div>
-            </div>
+    # --- NOVO LAYOUT REGRAS E LÓGICA (Meio a Meio e Fundo Branco) ---
+    st.markdown('<div class="section-title">📚 Regras e Lógica de Cálculo</div>', unsafe_allow_html=True)
+    
+    col_regras, col_logica = st.columns(2)
+    
+    with col_regras:
+        st.markdown("**Tabela de Parâmetros**")
+        regras_fmt = REGRAS.copy()
+        regras_fmt['% Nota'] = regras_fmt['% Nota'].apply(lambda x: f"{x:.2%}")
+        regras_fmt['% Venc'] = regras_fmt['% Venc'].apply(lambda x: f"{x:.2%}")
+        st.markdown(make_html_table(regras_fmt.set_index('Rating'), idx_col_name="Rating"), unsafe_allow_html=True)
+        
+    with col_logica:
+        st.markdown("**Lógica de Aplicação**")
+        st.markdown("""
+        <div class="logic-box">
+            <strong style="color:#0030B9">1. PDD Nota (Risco Sacado)</strong>
+            <p style="font-size:0.9em; margin:5px 0">Cálculo <i>Pro Rata Temporis</i> linear.</p>
+            <span class="formula-box">
+                (Data Posição - Aquisição) ÷ (Vencimento - Aquisição)
+            </span>
+            <br>
+            <strong style="color:#0030B9">2. PDD Vencido (Atraso)</strong>
+            <ul style="font-size:0.9em; padding-left:20px; color:#444; margin-top:5px; line-height:1.6;">
+                <li><b>≤ 20 dias:</b> 0%</li>
+                <li><b>21 a 59 dias:</b> Escalonamento linear<br>
+                    <span style="font-size:0.85em; color:#666; background:#f4f4f4; padding:2px 6px; border-radius:4px;">(Dias Atraso - 20) ÷ 40</span>
+                </li>
+                <li><b>≥ 60 dias:</b> 100% de provisionamento</li>
+            </ul>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
