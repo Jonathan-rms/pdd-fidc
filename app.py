@@ -79,76 +79,7 @@ st.markdown("""
         background: #0030B9 !important;
         color: white !important;
     }
-    
-    /* Tabelas - Fundo branco FORÇADO ULTRA AGRESSIVO */
-    div[data-testid="stDataFrame"],
-    div[data-testid="stDataFrame"] *,
-    div[data-testid="stDataFrame"] > div,
-    div[data-testid="stDataFrame"] > div > div,
-    div[data-testid="stDataFrame"] > div > div > div,
-    div[data-testid="stDataFrame"] table,
-    div[data-testid="stDataFrame"] table *,
-    div[data-testid="stDataFrame"] tbody,
-    div[data-testid="stDataFrame"] tbody *,
-    div[data-testid="stDataFrame"] tbody tr,
-    div[data-testid="stDataFrame"] tbody tr *,
-    div[data-testid="stDataFrame"] tbody td,
-    div[data-testid="stDataFrame"] tbody td *,
-    table,
-    table *,
-    table tbody,
-    table tbody tr,
-    table tbody td {
-        background: #ffffff !important;
-        background-color: #ffffff !important;
-        color: #262730 !important;
-    }
-    div[data-testid="stDataFrame"] {
-        padding: 0 !important;
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        overflow: hidden;
-        background: #ffffff !important;
-    }
-    div[data-testid="stDataFrame"] table {
-        border-collapse: collapse;
-        background: #ffffff !important;
-        background-color: #ffffff !important;
-    }
-    div[data-testid="stDataFrame"] thead,
-    div[data-testid="stDataFrame"] thead * {
-        background: #e8f0fe !important;
-        background-color: #e8f0fe !important;
-    }
-    div[data-testid="stDataFrame"] th,
-    div[data-testid="stDataFrame"] th * {
-        background: #e8f0fe !important;
-        background-color: #e8f0fe !important;
-        color: #0030B9 !important;
-        font-size: 14px;
-        font-weight: 600;
-        padding: 12px;
-        border-bottom: 2px solid #0030B9;
-    }
-    div[data-testid="stDataFrame"] td,
-    div[data-testid="stDataFrame"] td * {
-        background: #ffffff !important;
-        background-color: #ffffff !important;
-        color: #262730 !important;
-        padding: 10px 12px;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    div[data-testid="stDataFrame"] tr,
-    div[data-testid="stDataFrame"] tr * {
-        background: #ffffff !important;
-        background-color: #ffffff !important;
-    }
-    div[data-testid="stDataFrame"] tr:hover td,
-    div[data-testid="stDataFrame"] tr:hover td * {
-        background: #f8f9fa !important;
-        background-color: #f8f9fa !important;
-    }
-    
+
     /* Info boxes */
     [data-testid="stInfo"] {
         background: #f0f7ff; border: 1px solid #b3d9ff;
@@ -238,6 +169,71 @@ st.markdown("""
     ::-webkit-scrollbar-track { background: #f1f1f1; }
     ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* --- NOVOS ESTILOS PARA TABELAS HTML --- */
+    .styled-table {
+        width: 100%;
+        border-collapse: separate; 
+        border-spacing: 0;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px; /* Bordas arredondadas */
+        overflow: hidden;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        background-color: white;
+    }
+    .styled-table th {
+        background-color: #0030B9;
+        color: white;
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 500;
+        border-bottom: 2px solid #001074;
+    }
+    .styled-table th:first-child { border-top-left-radius: 8px; }
+    .styled-table th:last-child { border-top-right-radius: 8px; }
+    
+    .styled-table td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #333;
+    }
+    .styled-table tr:last-child td {
+        border-bottom: none;
+    }
+    /* Estilo para linha TOTAL */
+    .styled-table tr.total-row td {
+        font-weight: 700;
+        background-color: #f4f8ff;
+        border-top: 2px solid #0030B9;
+        color: #0030B9;
+    }
+    
+    /* Estilo para o Card de Explicação */
+    .clean-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        background: #ffffff;
+        height: 100%;
+    }
+    .clean-card h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+    .code-box {
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 0.85em;
+        color: #444;
+        border: 1px solid #eee;
+        margin-top: 5px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -518,6 +514,28 @@ def gerar_excel_final(df_original, calc_data):
     output.seek(0)
     return output
 
+# --- 4. FUNÇÃO AUXILIAR PARA HTML ---
+def make_html_table(df, idx_col_name=None):
+    html = '<table class="styled-table"><thead><tr>'
+    
+    # Cabeçalhos
+    if idx_col_name: html += f'<th>{idx_col_name}</th>'
+    for c in df.columns:
+        html += f'<th>{c}</th>'
+    html += '</tr></thead><tbody>'
+    
+    # Linhas
+    for idx, row in df.iterrows():
+        row_cls = "total-row" if str(idx).upper() == "TOTAL" else ""
+        html += f'<tr class="{row_cls}">'
+        if idx_col_name: html += f'<td><strong>{idx}</strong></td>'
+        for val in row:
+            html += f'<td>{val}</td>'
+        html += '</tr>'
+        
+    html += '</tbody></table>'
+    return html
+
 # --- 5. FRONTEND ---
 
 st.markdown("""
@@ -692,21 +710,42 @@ if st.session_state.processed_data:
     df_show = df_grp.apply(lambda col: col.map(fmt))
     df_show.columns = ["Valor Presente", "PDD Nota (Orig)", "PDD Nota (Calc)", "PDD Venc (Orig)", "PDD Venc (Calc)"]
     
-    st.dataframe(df_show, use_container_width=True)
+    # --- RENDERIZAÇÃO HTML CUSTOMIZADA (NOVO) ---
+    st.markdown(make_html_table(df_show, idx_col_name="Rating"), unsafe_allow_html=True)
     
     with st.expander("📚 Ver Regras de Cálculo", expanded=False):
         rc1, rc2 = st.columns(2)
+        
         with rc1:
-            st.write("**Tabela de Parâmetros**")
-            st.dataframe(REGRAS, hide_index=True, use_container_width=True)
-        with rc2:
-            st.write("**Lógica de Aplicação**")
-            st.success("""
-            **1. PDD Nota (Pro Rata):**
-            > (Data Posição - Data Aquisição) / (Vencimento - Aquisição)
+            # Tabela de regras em HTML
+            regras_fmt = REGRAS.copy()
+            regras_fmt['% Nota'] = regras_fmt['% Nota'].apply(lambda x: f"{x:.2%}")
+            regras_fmt['% Venc'] = regras_fmt['% Venc'].apply(lambda x: f"{x:.2%}")
+            st.markdown(make_html_table(regras_fmt.set_index('Rating'), idx_col_name="Rating"), unsafe_allow_html=True)
             
-            **2. PDD Vencido (Linear):**
-            * **≤ 20 dias:** 0%
-            * **21 a 59 dias:** (Dias Atraso - 20) / 40
-            * **≥ 60 dias:** 100%
-            """)
+        with rc2:
+            # Card Explicativo (NOVO CLEAN VISUAL)
+            st.markdown("""
+            <div class="clean-card">
+                <h4>🧠 Lógica de Cálculo</h4>
+                
+                <div style="margin-bottom:20px">
+                    <strong style="color:#0030B9">1. PDD Nota (Risco Sacado)</strong>
+                    <p style="font-size:0.9em; margin:5px 0">Cálculo <i>Pro Rata Temporis</i> linear.</p>
+                    <div class="code-box">
+                        (Data Posição - Aquisição) ÷ (Vencimento - Aquisição)
+                    </div>
+                </div>
+                
+                <div>
+                    <strong style="color:#0030B9">2. PDD Vencido (Atraso)</strong>
+                    <ul style="font-size:0.9em; padding-left:20px; color:#444; margin-top:5px">
+                        <li><b>≤ 20 dias:</b> 0%</li>
+                        <li><b>21 a 59 dias:</b> Escalonamento linear<br>
+                            <span style="font-size:0.85em; color:#666">(Dias Atraso - 20) ÷ 40</span>
+                        </li>
+                        <li><b>≥ 60 dias:</b> 100% de provisionamento</li>
+                    </ul>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
