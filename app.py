@@ -22,64 +22,60 @@ st.markdown("""
     .stApp, body { background: #ffffff !important; color: #262730 !important; }
     
     /* ============================================================ */
-    /* CORREÇÃO DEFINITIVA E ABSOLUTA DO UPLOADER                   */
+    /* CORREÇÃO DO UPLOADER (Abordagem Direcionada)                 */
     /* ============================================================ */
     
-    /* 1. O Container Principal */
+    /* 1. Container externo */
     div[data-testid="stFileUploader"] {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
         padding: 16px;
         background-color: #ffffff !important;
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
     }
 
-    /* 2. A REGRA "NUCLEAR" (Igual ao seu código antigo) */
-    /* Força TUDO dentro do uploader a ter fundo branco e texto escuro inicialmente */
-    /* Isso mata a barra preta instantaneamente */
-    div[data-testid="stFileUploader"] div,
-    div[data-testid="stFileUploader"] span,
-    div[data-testid="stFileUploader"] small,
-    div[data-testid="stFileUploader"] p,
-    div[data-testid="stFileUploader"] svg,
-    section[data-testid="stFileUploader"] * {
-        background-color: #ffffff !important;
-        color: #262730 !important;
-        fill: #262730 !important; /* Para ícones SVG */
-    }
-
-    /* 3. Área de Drop (Recuperando a borda e estilo) */
+    /* 2. Área de Drag & Drop (O alvo principal do bug) */
     section[data-testid="stFileUploader"] > div {
-        border: 2px dashed #d0d0d0 !important;
+        background-color: #f8f9fa !important; /* Fundo cinza claro */
+        border: 2px dashed #d0d0d0 !important; /* Borda tracejada */
         border-radius: 6px;
-        background-color: #fcfcfc !important; /* Um branco levemente diferente para contraste sutil */
+        color: #262730 !important; /* Força texto escuro */
     }
 
-    /* 4. Botão 'Browse files' (Recuperando o visual de botão) */
-    /* Sobrescreve a regra nuclear apenas para o botão */
-    div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #e9ecef !important; /* Fundo cinza claro */
+    /* 3. Forçar cor escura nos textos e ícones dentro da área de drop */
+    section[data-testid="stFileUploader"] span,
+    section[data-testid="stFileUploader"] small,
+    section[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] svg {
         color: #262730 !important;
-        border: 1px solid #ced4da !important;
-        font-weight: 600 !important;
+        fill: #262730 !important;
     }
 
-    /* 5. Item do Arquivo Carregado (A 'pílula' com o nome) */
+    /* 4. Botão 'Browse files' */
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        background-color: #e9ecef !important;
+        border: 1px solid #ced4da !important;
+        color: #262730 !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
+    }
+
+    /* 5. Item do Arquivo Carregado */
     div[data-testid="stFileUploader"] div[role="listitem"] {
+        background-color: #ffffff !important;
         border: 1px solid #e0e0e0 !important;
-        border-radius: 6px !important;
-        margin-top: 10px;
     }
     
-    /* Reforço para o nome do arquivo ficar em negrito */
+    /* Nome do arquivo carregado */
     div[data-testid="stFileUploader"] .uploadedFileName {
         font-weight: 700 !important;
+        color: #262730 !important;
     }
 
     /* ============================================================ */
     /* FIM DA CORREÇÃO                                              */
     /* ============================================================ */
 
-    /* --- BOTÕES GERAIS (Download, Calcular - Fora do Uploader) --- */
+    /* --- BOTÕES GERAIS --- */
     div.stButton > button,
     button[data-testid="baseButton-secondary"],
     button[data-testid="baseButton-primary"] {
@@ -91,14 +87,13 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,48,185,0.2) !important;
     }
     
-    /* IMPORTANTE: O botão dentro do uploader NÃO pode ser azul */
+    /* Exceção: Botão DENTRO do Uploader não deve ser azul */
     div[data-testid="stFileUploader"] button[kind="secondary"] {
-        background-color: #e9ecef !important;
         color: #262730 !important;
         box-shadow: none !important;
     }
 
-    /* --- BOTÃO DOWNLOAD (Área de Resultados) --- */
+    /* --- BOTÃO DOWNLOAD --- */
     div[data-testid="stDownloadButton"] { margin-top: 2px; }
     div[data-testid="stDownloadButton"] > button {
         background-color: #0030B9 !important;
@@ -117,11 +112,19 @@ st.markdown("""
     }
     
     /* --- METRICS --- */
+    /* Estilo padrão para todas as métricas */
     div[data-testid="stMetricValue"] {
         font-size: 24px !important;
-        color: #0030B9 !important;
+        color: #0030B9 !important; /* Cor padrão (azul mais claro) */
         font-weight: 600 !important;
     }
+    
+    /* --- COR ESPECÍFICA PARA V. PRESENTE --- */
+    /* Altera apenas a primeira métrica dentro do container .pdd-nota-metrics */
+    .pdd-nota-metrics div[data-testid="column"]:first-child div[data-testid="stMetricValue"] {
+        color: #001074 !important; /* Azul mais escuro solicitado */
+    }
+
     div[data-testid="stMetricLabel"], 
     div[data-testid="stMetricLabel"] > div,
     label[data-testid="stMetricLabel"] {
@@ -574,12 +577,15 @@ if st.session_state.processed_data:
     colA, colB = st.columns(2)
     with colA:
         st.info("📋 **PDD Nota** (Risco Sacado)")
+        # Envolvendo as métricas em um container personalizado para aplicar o CSS
+        st.markdown('<div class="pdd-nota-metrics">', unsafe_allow_html=True)
         m0, m1, m2, m3 = st.columns(4)
         m0.metric("V. Presente", fmt_brl_metric(tot_val))
         m1.metric("Original", fmt_brl_metric(tot_orn))
         m2.metric("Calculado", fmt_brl_metric(tot_cn))
         dif = tot_orn - tot_cn
         m3.metric("Diferença", fmt_brl_metric(dif), delta=fmt_brl_metric(dif), delta_color="normal")
+        st.markdown('</div>', unsafe_allow_html=True)
         
     with colB:
         st.info("⏰ **PDD Vencido** (Atraso)")
