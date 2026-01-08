@@ -2,8 +2,7 @@ name: Acordar Streamlit
 
 on:
   schedule:
-    # Mudei para rodar a cada 6 horas (mais garantido que 1x ao dia)
-    - cron: '0 */6 * * *' 
+    - cron: '0 */4 * * *' # A cada 4 horas (Streamlit dorme rápido)
   workflow_dispatch:
 
 jobs:
@@ -14,20 +13,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # 1. Ping no site REFORÇADO
+      # 1. Ping CORRIGIDO (Com Cookies para evitar Loop de Redirecionamento)
       - name: Acordar o App
         run: |
-          # Flags explicadas:
-          # -L: Segue redirecionamentos (o streamlit faz redirects)
-          # --retry 3: Tenta 3 vezes se falhar
-          # --max-time 30: Espera até 30s (útil se o app estiver acordando, que demora)
-          # -A "...": Finge ser um navegador Chrome real (User-Agent)
+          # Adicionei:
+          # --cookie-jar c.txt : Salva os cookies que o Streamlit manda
+          # --cookie c.txt     : Envia os cookies de volta no redirecionamento
           
-          curl -L --retry 3 --max-time 30 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" https://calculadora-pdd-fidc.streamlit.app/
+          curl -L --retry 3 --max-time 30 --cookie-jar c.txt --cookie c.txt -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" https://calculadora-pdd-fidc.streamlit.app/
           
-          echo "Ping (fake browser) realizado com sucesso!"
+          echo "Ping com cookies realizado!"
 
-      # 2. Script de inatividade (Mantive igual, pois funciona para o repo)
+      # 2. Script de inatividade (Mantém o repo vivo)
       - name: Evitar inatividade do Repo
         run: |
           last_commit=$(git log -1 --format=%ct)
