@@ -1,31 +1,57 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import time
+from selenium.common.exceptions import TimeoutException
+import os
 
-# Configurações para rodar no servidor (Headless = sem interface gráfica)
-chrome_options = Options()
-chrome_options.add_argument("--headless") 
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
+# Streamlit app URL from environment variable (or default)
+STREAMLIT_URL = os.environ.get("STREAMLIT_APP_URL", "https://calculadora-pdd-fidc.streamlit.app/")
 
-# Inicia o navegador
-service = Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service, options=chrome_options)
+def main():
+    options = Options()
+    options.add_argument('--headless=new')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--window-size=1920,1080')
 
-url = "https://calculadora-pdd-fidc.streamlit.app/"
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-print(f"Acessando {url}...")
-driver.get(url)
+    try:
+        driver.get(STREAMLIT_URL)
+        print(f"Opened {STREAMLIT_URL}")
 
-# O PULO DO GATO: Esperar o JavaScript carregar e o app "bootar"
-# Streamlit pode demorar para sair da hibernação
-print("Aguardando carregamento (30s)...")
-time.sleep(30)
+        wait = WebDriverWait(driver, 15)
+        try:
+            # Look for the wake-up button
+            button = wait.until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]"))
+            )
+            print("Wake-up button found. Clicking...")
+            button.click()
 
-# Tira um print (opcional, ajuda a debugar se der erro nos logs do Action)
-print("Título da página encontrada:", driver.title)
+            # After clicking, check if it disappears
+            try:
+                wait.until(EC.invisibility_of_element_located((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]")))
+                print("Button clicked and disappeared ✅ (app should be waking up)")
+            except TimeoutException:
+                print("Button was clicked but did NOT disappear ❌ (possible failure)")
+                exit(1)
 
-driver.quit()
-print("Processo finalizado com sucesso.")
+        except TimeoutException:
+            # No button at all → app is assumed to be awake
+            print("No wake-up button found. Assuming app is already awake ✅")
+
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        exit(1)
+    finally:
+        driver.quit()
+        print("Script finished.")
+
+if __name__ == "__main__":
+    main()
