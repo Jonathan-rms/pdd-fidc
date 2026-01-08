@@ -2,26 +2,33 @@ name: Acordar Streamlit
 
 on:
   schedule:
-    - cron: '0 9 * * *' # Roda todo dia às 09:00 UTC
+    # Mudei para rodar a cada 6 horas (mais garantido que 1x ao dia)
+    - cron: '0 */6 * * *' 
   workflow_dispatch:
 
 jobs:
   cron_job:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Permissão crítica para poder fazer commit
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
-      # 1. Ping no site (mantém o Streamlit acordado)
+      # 1. Ping no site REFORÇADO
       - name: Acordar o App
         run: |
-          # Substitua pelo seu link real
-          curl -I https://calculadora-pdd-fidc.streamlit.app/
-          echo "Ping realizado com sucesso!"
+          # Flags explicadas:
+          # -L: Segue redirecionamentos (o streamlit faz redirects)
+          # --retry 3: Tenta 3 vezes se falhar
+          # --max-time 30: Espera até 30s (útil se o app estiver acordando, que demora)
+          # -A "...": Finge ser um navegador Chrome real (User-Agent)
+          
+          curl -L --retry 3 --max-time 30 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" https://calculadora-pdd-fidc.streamlit.app/
+          
+          echo "Ping (fake browser) realizado com sucesso!"
 
-      # 2. # Este script verifica se o último commit foi há mais de 50 dias.
-      - name: Evitar inatividade
+      # 2. Script de inatividade (Mantive igual, pois funciona para o repo)
+      - name: Evitar inatividade do Repo
         run: |
           last_commit=$(git log -1 --format=%ct)
           now=$(date +%s)
