@@ -1,44 +1,41 @@
-name: Acordar Streamlit
+name: Acordar Streamlit (Selenium)
 
 on:
   schedule:
-    - cron: '0 */4 * * *' # A cada 4 horas (Streamlit dorme rápido)
+    - cron: '0 */6 * * *' # Roda a cada 6 horas
   workflow_dispatch:
 
 jobs:
-  cron_job:
+  wake_up_job:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v3
 
-      # 1. Ping CORRIGIDO (Com Cookies para evitar Loop de Redirecionamento)
-      - name: Acordar o App
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar dependências (Selenium)
         run: |
-          # Adicionei:
-          # --cookie-jar c.txt : Salva os cookies que o Streamlit manda
-          # --cookie c.txt     : Envia os cookies de volta no redirecionamento
-          
-          curl -L --retry 3 --max-time 30 --cookie-jar c.txt --cookie c.txt -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" https://calculadora-pdd-fidc.streamlit.app/
-          
-          echo "Ping com cookies realizado!"
+          pip install selenium webdriver-manager
 
-      # 2. Script de inatividade (Mantém o repo vivo)
-      - name: Evitar inatividade do Repo
+      - name: Rodar Script de Acordar
+        run: python automacao.py
+
+      # Mantive seu script de anti-inatividade do git, que é útil
+      - name: Evitar inatividade do Repo (Commit a cada 50 dias)
         run: |
           last_commit=$(git log -1 --format=%ct)
           now=$(date +%s)
           days_since=$(( ($now - $last_commit) / 86400 ))
-          
           echo "Dias desde o último commit: $days_since"
-          
           if [ $days_since -gt 50 ]; then
-            echo "Mais de 50 dias inativo. Gerando commit automático..."
             git config --global user.email "action@github.com"
             git config --global user.name "GitHub Action"
             git commit --allow-empty -m "Manter workflow ativo [skip ci]"
             git push
-          else
-            echo "Repositório ativo. Nenhum commit necessário."
           fi
