@@ -433,11 +433,17 @@ upload_container = st.container()
 with upload_container:
     uploaded_file = st.file_uploader("Carregar Base (.xlsx / .csv)", type=['xlsx', 'csv'], label_visibility="collapsed")
 
+# Versão derivada do conteúdo do REGRAS — muda automaticamente se a tabela mudar
+_REGRAS_VERSION = str(pd.util.hash_pandas_object(REGRAS).sum())
+
 if 'processed_data'    not in st.session_state: st.session_state.processed_data    = None
 if 'current_file_name' not in st.session_state: st.session_state.current_file_name = None
+if 'regras_version'    not in st.session_state: st.session_state.regras_version    = None
 
 if uploaded_file:
-    if st.session_state.current_file_name != uploaded_file.name:
+    # Força reprocessamento se o arquivo mudou OU se a tabela de regras foi atualizada
+    if (st.session_state.current_file_name != uploaded_file.name
+            or st.session_state.regras_version != _REGRAS_VERSION):
         start_time = time.time()
 
         with upload_container:
@@ -499,6 +505,7 @@ if uploaded_file:
                     'etapa_calculo': etapa_calculo, 'etapa_excel': etapa_excel
                 }
                 st.session_state.current_file_name = uploaded_file.name
+                st.session_state.regras_version    = _REGRAS_VERSION
 
 if st.session_state.processed_data:
     data = st.session_state.processed_data
